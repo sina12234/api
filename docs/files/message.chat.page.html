@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="utf-8"/>
+    <title>Api Documentation</title>
+    <meta name="author" content=""/>
+    <meta name="description" content=""/>
+
+    <link href="../css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/prism.css" rel="stylesheet" media="all"/>
+    <link href="../css/template.css" rel="stylesheet" media="all"/>
+    
+    <!--[if lt IE 9]>
+    <script src="../js/html5.js"></script>
+    <![endif]-->
+    <script src="../js/jquery-1.11.0.min.js"></script>
+    <script src="../js/ui/1.10.4/jquery-ui.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.smooth-scroll.js"></script>
+    <script src="../js/prism.min.js"></script>
+    <!-- TODO: Add http://jscrollpane.kelvinluck.com/ to style the scrollbars for browsers not using webkit-->
+        <script type="text/javascript">
+        function loadExternalCodeSnippets() {
+            Array.prototype.slice.call(document.querySelectorAll('pre[data-src]')).forEach(function (pre) {
+                var src = pre.getAttribute('data-src');
+                var extension = (src.match(/\.(\w+)$/) || [, ''])[1];
+                var language = 'php';
+
+                var code = document.createElement('code');
+                code.className = 'language-' + language;
+
+                pre.textContent = '';
+
+                code.textContent = 'Loading…';
+
+                pre.appendChild(code);
+
+                var xhr = new XMLHttpRequest();
+
+                xhr.open('GET', src, true);
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4) {
+
+                        if (xhr.status < 400 && xhr.responseText) {
+                            code.textContent = xhr.responseText;
+
+                            Prism.highlightElement(code);
+                        }
+                        else if (xhr.status >= 400) {
+                            code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                        }
+                        else {
+                            code.textContent = '✖ Error: File does not exist or is empty';
+                        }
+                    }
+                };
+
+                xhr.send(null);
+            });
+        }
+
+        $(document).ready(function(){
+            loadExternalCodeSnippets();
+        });
+        $('#source-view').on('shown', function () {
+            loadExternalCodeSnippets();
+        })
+    </script>
+
+    <link rel="shortcut icon" href="../images/favicon.ico"/>
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png"/>
+    <link rel="apple-touch-icon" sizes="72x72" href="../images/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon" sizes="114x114" href="../images/apple-touch-icon-114x114.png"/>
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <i class="icon-ellipsis-vertical"></i>
+            </a>
+            <a class="brand" href="../index.html">Api Documentation</a>
+
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                                        <li class="dropdown" id="charts-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Charts <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../graphs/class.html">
+                                    <i class="icon-list-alt"></i>&#160;Class hierarchy diagram
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="reports-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Reports <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../reports/errors.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">2074</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/markers.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Markers <span class="label label-info pull-right">11</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/deprecated.html">
+                                                                                                            <i class="icon-list-alt"></i>&#160;Deprecated <span class="label label-info pull-right">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--<div class="go_to_top">-->
+    <!--<a href="#___" style="color: inherit">Back to top&#160;&#160;<i class="icon-upload icon-white"></i></a>-->
+    <!--</div>-->
+</div>
+
+<div id="___" class="container-fluid">
+        <section class="row-fluid">
+        <div class="span2 sidebar">
+                                <div class="accordion" style="margin-bottom: 0">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-2115805992"></a>
+                                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            </div>
+            <div id="namespace-2115805992" class="accordion-body collapse in">
+                <div class="accordion-inner">
+
+                    
+                    <ul>
+                                                                                                    <li class="class"><a href="../classes/activity_2014.html">activity_2014</a></li>
+                                                    <li class="class"><a href="../classes/activity_db.html">activity_db</a></li>
+                                                    <li class="class"><a href="../classes/admin_db.html">admin_db</a></li>
+                                                    <li class="class"><a href="../classes/admin_user.html">admin_user</a></li>
+                                                    <li class="class"><a href="../classes/censor_db.html">censor_db</a></li>
+                                                    <li class="class"><a href="../classes/censor_test.html">censor_test</a></li>
+                                                    <li class="class"><a href="../classes/comment_course.html">comment_course</a></li>
+                                                    <li class="class"><a href="../classes/comment_db.html">comment_db</a></li>
+                                                    <li class="class"><a href="../classes/course_adminstatus.html">course_adminstatus</a></li>
+                                                    <li class="class"><a href="../classes/course_api.html">course_api</a></li>
+                                                    <li class="class"><a href="../classes/course_cate.html">course_cate</a></li>
+                                                    <li class="class"><a href="../classes/course_class.html">course_class</a></li>
+                                                    <li class="class"><a href="../classes/course_db.html">course_db</a></li>
+                                                    <li class="class"><a href="../classes/course_detail.html">course_detail</a></li>
+                                                    <li class="class"><a href="../classes/course_discount.html">course_discount</a></li>
+                                                    <li class="class"><a href="../classes/course_feeorder.html">course_feeorder</a></li>
+                                                    <li class="class"><a href="../classes/course_grade.html">course_grade</a></li>
+                                                    <li class="class"><a href="../classes/course_info.html">course_info</a></li>
+                                                    <li class="class"><a href="../classes/course_live.html">course_live</a></li>
+                                                    <li class="class"><a href="../classes/course_mydiscount.html">course_mydiscount</a></li>
+                                                    <li class="class"><a href="../classes/course_order.html">course_order</a></li>
+                                                    <li class="class"><a href="../classes/course_plan.html">course_plan</a></li>
+                                                    <li class="class"><a href="../classes/course_section.html">course_section</a></li>
+                                                    <li class="class"><a href="../classes/course_status.html">course_status</a></li>
+                                                    <li class="class"><a href="../classes/course_video.html">course_video</a></li>
+                                                    <li class="class"><a href="../classes/file_db.html">file_db</a></li>
+                                                    <li class="class"><a href="../classes/file_info.html">file_info</a></li>
+                                                    <li class="class"><a href="../classes/live_api.html">live_api</a></li>
+                                                    <li class="class"><a href="../classes/live_chat.html">live_chat</a></li>
+                                                    <li class="class"><a href="../classes/live_db.html">live_db</a></li>
+                                                    <li class="class"><a href="../classes/live_file.html">live_file</a></li>
+                                                    <li class="class"><a href="../classes/live_play.html">live_play</a></li>
+                                                    <li class="class"><a href="../classes/live_publish.html">live_publish</a></li>
+                                                    <li class="class"><a href="../classes/live_video.html">live_video</a></li>
+                                                    <li class="class"><a href="../classes/log_db.html">log_db</a></li>
+                                                    <li class="class"><a href="../classes/log_log.html">log_log</a></li>
+                                                    <li class="class"><a href="../classes/message_api.html">message_api</a></li>
+                                                    <li class="class"><a href="../classes/message_chat.html">message_chat</a></li>
+                                                    <li class="class"><a href="../classes/message_db.html">message_db</a></li>
+                                                    <li class="class"><a href="../classes/message_http.html">message_http</a></li>
+                                                    <li class="class"><a href="../classes/message_instation.html">message_instation</a></li>
+                                                    <li class="class"><a href="../classes/message_type.html">message_type</a></li>
+                                                    <li class="class"><a href="../classes/rbac_db.html">rbac_db</a></li>
+                                                    <li class="class"><a href="../classes/rbac_info.html">rbac_info</a></li>
+                                                    <li class="class"><a href="../classes/redis_api.html">redis_api</a></li>
+                                                    <li class="class"><a href="../classes/region_db.html">region_db</a></li>
+                                                    <li class="class"><a href="../classes/region_main.html">region_main</a></li>
+                                                    <li class="class"><a href="../classes/seek_course.html">seek_course</a></li>
+                                                    <li class="class"><a href="../classes/seek_course1.html">seek_course1</a></li>
+                                                    <li class="class"><a href="../classes/SphinxClient.html">SphinxClient</a></li>
+                                                    <li class="class"><a href="../classes/task_db.html">task_db</a></li>
+                                                    <li class="class"><a href="../classes/user_api.html">user_api</a></li>
+                                                    <li class="class"><a href="../classes/user_auth.html">user_auth</a></li>
+                                                    <li class="class"><a href="../classes/user_const.html">user_const</a></li>
+                                                    <li class="class"><a href="../classes/user_db.html">user_db</a></li>
+                                                    <li class="class"><a href="../classes/user_info.html">user_info</a></li>
+                                                    <li class="class"><a href="../classes/user_organization.html">user_organization</a></li>
+                                                    <li class="class"><a href="../classes/user_parterner.html">user_parterner</a></li>
+                                                    <li class="class"><a href="../classes/user_profile.html">user_profile</a></li>
+                                                    <li class="class"><a href="../classes/user_student.html">user_student</a></li>
+                                                    <li class="class"><a href="../classes/user_task.html">user_task</a></li>
+                                                    <li class="class"><a href="../classes/user_teacher.html">user_teacher</a></li>
+                                                    <li class="class"><a href="../classes/user_test.html">user_test</a></li>
+                                                    <li class="class"><a href="../classes/user_token.html">user_token</a></li>
+                                                    <li class="class"><a href="../classes/utility_ip.html">utility_ip</a></li>
+                                                    <li class="class"><a href="../classes/utility_mobile.html">utility_mobile</a></li>
+                                                    <li class="class"><a href="../classes/utility_net.html">utility_net</a></li>
+                                                    <li class="class"><a href="../classes/utility_valid.html">utility_valid</a></li>
+                                                    <li class="class"><a href="../classes/verify_api.html">verify_api</a></li>
+                                                    <li class="class"><a href="../classes/verify_check.html">verify_check</a></li>
+                                                    <li class="class"><a href="../classes/verify_db.html">verify_db</a></li>
+                                                    <li class="class"><a href="../classes/verify_query.html">verify_query</a></li>
+                                                    <li class="class"><a href="../classes/verify_send.html">verify_send</a></li>
+                                                    <li class="class"><a href="../classes/verify_test.html">verify_test</a></li>
+                                                    <li class="class"><a href="../classes/weixin_api.html">weixin_api</a></li>
+                                                    <li class="class"><a href="../classes/weixin_auth.html">weixin_auth</a></li>
+                                                    <li class="class"><a href="../classes/weixin_db.html">weixin_db</a></li>
+                                                    <li class="class"><a href="../classes/weixin_message.html">weixin_message</a></li>
+                                            </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </section>
+    <section class="row-fluid">
+        <div class="span10 offset2">
+            <div class="row-fluid">
+                <div class="span8 content file">
+                    <nav>
+                                                                    </nav>
+
+                    <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
+                    <h1><small>message</small>chat.page.php</h1>
+                    <p><em></em></p>
+                    
+
+                    
+                    
+                                        <h2>Classes</h2>
+                    <table class="table table-hover">
+                                            <tr>
+                            <td><a href="../classes/message_chat.html">message_chat</a></td>
+                            <td><em></em></td>
+                        </tr>
+                                        </table>
+                                    </div>
+
+                <aside class="span4 detailsbar">
+                    <dl>
+                                                    <dt>Package</dt>
+                            <dd><div class="namespace-wrapper">\Default</div></dd>
+                        
+                        
+                    </dl>
+                    <h2>Tags</h2>
+                    <table class="table table-condensed">
+                                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                                            </table>
+
+                </aside>
+            </div>
+
+            
+            
+        </div>
+    </section>
+
+    <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="source-view-label"></h3>
+        </div>
+        <div class="modal-body">
+            <pre data-src="../files/message/chat.page.php.txt" class="language-php line-numbers"></pre>
+        </div>
+    </div>
+
+    <footer class="row-fluid">
+        <section class="span10 offset2">
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <section class="row-fluid footer-sections">
+                        <section class="span4">
+                                                        <h1><i class="icon-code"></i></h1>
+                            <div>
+                                <ul>
+                                                                    </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-bar-chart"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../graphs/class.html">Class Hierarchy Diagram</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-pushpin"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../reports/errors.html">Errors</a></li>
+                                    <li><a href="../reports/markers.html">Markers</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                    </section>
+                </section>
+            </section>
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <hr />
+                    Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
+                    on June 25th, 2015 at 14:41.
+                </section>
+            </section>
+        </section>
+    </footer>
+</div>
+
+</body>
+</html>

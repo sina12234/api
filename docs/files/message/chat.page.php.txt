@@ -1,0 +1,283 @@
+<?php
+class message_chat{
+	public function __construct($inPath){
+		return;
+	}
+
+	public function pageOnline($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+
+		if(empty($params->online) || empty($params->plan_id) || !isset($params->user_from_id) || empty($params->user_from_token)){
+			$ret->result->msg = "缺少参数";
+			return $ret;
+		}
+
+		$isOnline = false;
+		if("on" == $params->online){
+			$isOnline = true;
+		}
+		$db_ret = message_api::online($params->user_from_id, $params->user_from_token, $params->plan_id, $isOnline);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageClass($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+
+		if(empty($params->class) || empty($params->plan_id) || empty($params->user_id) || empty($params->user_token)){
+			$ret->result->msg = "缺少参数";
+			return $ret;
+		}
+
+		if("start" == $params->class){
+			$isStart = true;
+		}else{
+			$isStart = false;
+		}
+		$db_ret = message_api::startCloseClass($params->plan_id, $params->user_id, $params->user_token, $isStart);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageAddMsgV2($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+
+		if(empty($params->type) || empty($params->plan_id) || empty($params->user_from_id)){
+			$ret->result->msg = "缺少参数";
+			return $ret;
+		}
+
+		$message_db = new message_db;
+		$course_db = null;
+		$plan = null;
+		if(message_type::text == $params->type){
+			$pattern = $message_db->getSetting($params->plan_id);
+			if($pattern){
+				$p = $pattern["text_pattern"];
+				if("normal" != $p){
+					$course_db = new course_db;
+					$plan = $course_db->getPlan($params->plan_id);
+					if(!$plan){
+						$ret->result->msg = "没有这个班级";
+						return $ret;
+					}
+					if($plan["user_id"] != $params->user_from_id && $plan["user_plan_id"] != $params->user_from_id){
+						if("reply" == $p){
+							$params->type = message_type::reply_text;
+						}else{
+							$ret->result->msg = "禁言模式不允许学生发言";
+							return $ret;
+						}
+					}
+				}
+			}
+		}
+		if(!$course_db){
+			$course_db = new course_db;
+			$plan = $course_db->getPlan($params->plan_id);
+			if(!$plan){
+				$ret->result->msg = "没有这个班级";
+				return $ret;
+			}
+		}
+		if($params->user_from_id != $plan["user_id"] && $params->user_from_id != $plan["user_plan_id"]){
+			$reg = $course_db->listregistration($plan["course_id"], $plan["class_id"], $params->user_from_id);
+			if(empty($reg->items)){
+				$ret->result->msg = "学生不在班级不能发消息";
+				return $ret;
+			}
+		}
+		if(!empty($params->content)){
+			$content = strip_tags($params->content);
+			if(mb_strlen($content) > 200){
+				$ret->result->msg = "输入内容过长";
+				return $ret;
+			}
+			$params->content = $content;
+		}
+		if(empty($params->user_to_id) && message_type::isAutoSetUserTo($params->type)){
+			if(!$course_db){
+				$course_db = new course_db;
+				$plan = $course_db->getPlan($params->plan_id);
+			}
+			$params->fk_user_to = $plan["user_plan_id"];
+		}
+		if(message_type::onlyTeacher($params->type)){
+			if(!$course_db){
+				$course_db = new course_db;
+				$plan = $course_db->getPlan($params->plan_id);
+			}
+			if($plan["user_plan_id"] != $params->user_from_id){
+				$ret->result->msg = "类型[$params->type]消息只有教师才可以发送";
+				return $ret;
+			}
+		}
+		if(message_type::ask_cancel == $params->type && "cancel" == $params->content){
+			live_api::closeChat($params->user_from_id, $params->plan_id);
+		}else if(message_type::agree_refuse == $params->type && ("agree" == $params->content || "asking" == $params->content)){
+			live_api::allowChat($params->user_to_id, $params->plan_id, $params->user_to_token);
+		}else if(message_type::agree_refuse == $params->type && "stop" == $params->content){
+			live_api::closeChat($params->user_to_id, $params->plan_id);
+		}
+		$category = message_type::typeCategory($params->type);
+		$message_http = new message_http;
+		if("text" == $category){
+			$http_ret = $message_http->addText($params);
+			$db_ret = $message_db->addText($params);
+		}else if("good" == $category){
+			$http_ret = $message_http->addGood($params);
+			$db_ret = $message_db->addGood($params);
+		}else{
+			$http_ret = $message_http->addSignal($params);
+			//$db_ret = $message_db->addSignal($params);
+			$db_ret = 1;
+		}
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->result->data = array("key"=>$category, "value"=>$db_ret, "http"=>$http_ret);
+		}
+		$pattern = 0;
+		if($params->type == message_type::pattern){
+			if("normal" == $params->content){
+				$pattern = "normal";
+			}else 	if("reply" == $params->content){
+				$pattern = "reply";
+			}else	if("notalk" == $params->content){
+				$pattern = "notalk";
+			}
+		}
+		if($pattern){
+			$data2 = new stdclass;
+			$data2->fk_plan = $params->plan_id;
+			$data2->text_pattern = $pattern;
+			$message_db->addSetting($data2);
+		}
+		return $ret;
+	}
+	/*public function pageGetMsgV2($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id)){
+			$ret->result->msg="参数没有plan_id";
+			return $ret;
+		}
+		if(empty($params->msg_id)){
+			$params->msg_id = new stdclass;
+			$params->msg_id->text = 0;
+			$params->msg_id->signal = 0;
+			$params->msg_id->good = 0;
+		}
+		$course_db = new course_db;
+		$plan = $course_db->getPlan($params->plan_id);
+		if(!$plan){
+			$ret->result->msg = "没有这个班级";
+			return $ret;
+		}
+		$total = $course_db->getRegistrationCountByClass($plan["class_id"]);
+		if($total){
+			$ret->data = array();
+			$ret->data["total"] = array("user_to_id"=>0, "type"=>600, "content"=>"$total");
+			$ret->result->code = 0;
+		}else{
+			$ret->result->msg = "不能得到这个班级对应的学生";
+			return $ret;
+		}
+		$message_db = new message_db;
+		$data = $message_db->getText($params->plan_id, $params->msg_id->text);
+		if(!empty($data)){
+			foreach($data as $i => &$item){
+				if($plan["user_id"] == $item["user_from_id"] || $plan["user_plan_id"] == $item["user_from_id"]){
+					$item["is_teacher"] = true;
+				}else{
+					$item["is_teacher"] = false;
+				}
+			}
+			$ret->data["text"] = $data;
+		}
+		$data = $message_db->getSignal($params->plan_id, $params->msg_id->signal);
+		if(!empty($data)){
+			$ret->data["signal"] = $data;
+		}
+		$data = $message_db->getGood($params->plan_id, $params->msg_id->good);
+		if(!empty($data)){
+			$ret->data["good"] = $data;
+		}
+		return $ret;
+	}*/
+	//专门给何涛go server用的接口
+	public function pageGetText($inPath){
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id)){
+			return array();
+		}
+		$message_db = new message_db;
+		$plan_id = intval($params->plan_id);
+		$data = $message_db->getText($plan_id, 0);
+		if(empty($data)){
+			return array();
+		}
+		$result = array();
+		foreach($data as $item){
+			if(0 != $item["type"]){
+				$v = array();
+				$v["MessageType"] = "text";
+				$v["PlanId"] = $plan_id;
+				$v["UserIdFrom"] = intval($item["user_from_id"]);
+				$v["UserIdTo"] = intval($item["user_to_id"]);
+				$v["Content"] = $item["content"];
+				$v["ContentType"] = intval($item["type"]);
+				$v["LiveSecond"] = intval($item["live_second"]);
+				$v["LastUpdate"] = $item["last_updated"];
+				$result[] = $v;
+			}
+		}
+		return $result;
+	}
+	public function pageGetGood($inPath){
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id)){
+			return array();
+		}
+		$message_db = new message_db;
+		$plan_id = intval($params->plan_id);
+		$data = $message_db->getGood($plan_id, 0);
+		if(empty($data)){
+			return array();
+		}
+		$result = array();
+		foreach($data as $item){
+			if(0 != $item["type"]){
+				$v = array();
+				$v["MessageType"] = "good";
+				$v["PlanId"] = $plan_id;
+				$v["UserIdTo"] = intval($item["user_id"]);
+				$v["Content"] = "".$item["num"];
+				$v["ContentType"] = intval($item["type"]);
+				$v["LastUpdate"] = $item["last_updated"];
+				$result[] = $v;
+			}
+		}
+		return $result;
+	}
+}
+?>
+

@@ -1,0 +1,55 @@
+<?php
+require_once("../../www/global.php");
+SlightPHP::setDebug(true);
+SlightPHP::setAppDir(ROOT_APP);
+SDb::setConfigFile(ROOT_CONFIG. "/db.conf");
+set_time_limit(0);
+$dbname="db_utility";
+$db = new SDb;
+$db->useConfig($dbname);
+//define("DEBUG",true);
+$regions = $db->select("t_region");//,array("tmp_id=1010005"));
+print_r(count($regions->items));
+$school_type=array(1=>"小学",6=>"中学",8=>"X",16=>"D",32=>"E");
+//$r = SJson::decode(SHttp::post("http://space.jyeoo.com/class/searchschoollist?pi=1&a=&b=1220101&c=6&r=0.7228586839046329"));
+$cookie=array(
+"jyean"=>"88gK6wpkCoq0ACn65t5oHwl7TrHdudZx85lEBAy_cipfg9IB55-tKd_9KOr6EHj5iNI2K4GXIeDHfgtpeQIGHZrlv6DmGVUbXjnT8jZRt528v6VYALll09WitZAFUK2y0",
+"jye_math_ques_s"=>"8",
+"jye_math_ques_d"=>"0",
+"jye_math_ques_t"=>"0",
+"jye_math_ques_0_q"=>"8d1aaadf-4eec-4c53-8b17-48dfc8288f4a~2b6ec69b-c42b-4f38-8865-90992841a2c0~",
+"jye_physics_ques_s"=>"0",
+"jye_physics_ques_d"=>"0",
+"jye_physics_ques_t"=>"0",
+"jye_physics_ques_0_q"=>"a2cbf627-b801-4bc1-8eb3-8cd0694403f5~5a79e6c4-eea4-4fd7-adbd-b5a8fbc3172e~",
+"jy"=>"224ADCBA176E6CEBA8CAD0F61BA77E8BCDECADDB9BC5152BBD072CD2DB3C9ED4B831D48F60900CA6ECB6BCA3E0086C09DD0C277F7EA435F367DC3E3A4AA9272AC00A1810288A770283732E02FEA0CDD8F122D50DD6A7904F5A10D28DDB180CB70C3E620D3EB833B7C10AF7F5945723FED60296A247CBF957C483023CA501B18E8C1130A2DB51BCB86C20617313B17985C8350328CD979845BCA8572D46FD4AE276202781085EA9272CDAE14227A96BEA5A9C22F0FF374F33C21C465066CA1BDE20FFFA90B9DF32F024EDBD23A0255FA5F9A75378511904FBCB45014A815A20EEEF1794798F1624FABDD4A7FBF145B2F4C8F7CC9AB361A4FDB89E02450D3EE00B",
+"LF_Email"=>"hetao29@sina.com",
+"jye_notice_show"=>"1|2015/4/10 11:12:29|0",
+"CNZZDATA2018550"=>"cnzz_eid%3D1110330119-1423131465-http%253A%252F%252Fwww.jyeoo.com%252F%26ntime%3D1428634096",
+"JYERN"=>"0.05006804573349655",
+"jye_uid"=>"0280403e-349f-4ca1-a7e3-8ca65826ab9c",
+);
+foreach($regions->items as $region){
+		//下载学校
+
+		foreach($school_type as $type=>$type_name){
+	//获取下面有没有学校
+			$school = $db->select("t_region_school",array("fk_region"=>$region['pk_region'],"school_type"=>$type));
+			echo "{$region['pk_region']}:{$region['name']},type:$type,school number:".count($school->items)."\n";
+			if(empty($school->items)){
+				//echo "download type $type:\n";
+				$r = SHttp::post("http://space.jyeoo.com/class/searchschoollist?pi=1&a=&b={$region['tmp_id']}&c=$type&r=0.7228586839046329",array(),$cookie,false,3);
+				preg_match_all("/\<a.+?\>(.+?)\<\/a\>/",$r,$_m);
+				//print_r(count($_m[1]));
+				if(!empty($_m[1]) && count($_m[1])>1){
+					//print_r($_m[1]);
+					foreach($_m[1] as $school_name){
+						$school_id = $db->insert("t_region_school",array("fk_region"=>$region['pk_region'],"school_type"=>$type,"school_name"=>$school_name,"tmp_id"=>$region['tmp_id']));
+						if($school_id){
+							echo "AddSchool:$school_id\n";
+						}
+					}
+				}
+			}
+	}
+}

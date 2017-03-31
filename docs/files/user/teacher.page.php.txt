@@ -1,0 +1,158 @@
+<?php
+/**
+  * 用户API 
+  * @link http://wiki.gn100.com/doku.php?id=docs:api:user
+  **/
+class user_teacher{
+	/**
+	 * 校验提交的服务器权限，仅在配置文件里的才可以提交
+	 * */
+	public function __construct($inPath){
+		return;
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","user");
+		if(empty($conf->allow)){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	function pageGet($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		if(empty($inPath[3])){
+			return $ret;
+		}
+		$uid = $inPath[3];
+		$user_db = new user_db;
+		$user_info = $user_db->getTeacherProfile($uid);
+		if(empty($user_info)){
+			$ret->result->code = -2; 
+			$ret->result->msg= "profile do not exists"; 
+			return $ret;
+		}
+		$ret->data=array();
+		$ret->data['title']	=	$user_info['title'];
+		$ret->data['college']	=	$user_info['college'];
+		$ret->data['years']	=	$user_info['years'];
+		$ret->data['diploma']	=	$user_info['diploma'];
+		$ret->data['desc']	=	$user_info['desc'];
+		return $ret;
+	}
+	function pageGetTeacherInfoByIds($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params=SJson::decode(utility_net::getPostData(),true);
+		if(empty($params)){
+			return $ret;
+		}
+		$user_db = new user_db;
+		$user_info = $user_db->getTeacherProfileByIds($params);
+		if(empty($user_info)){
+			$ret->result->code = -2; 
+			$ret->result->msg= "profile do not exists"; 
+			return $ret;
+		}
+        $data=array();
+        foreach($user_info as $v){
+            $data[$v['fk_user']]=$v;
+
+        }
+        $ret->data=$data;
+		return $ret;
+	}
+	/**
+	  * 用户创建立接口
+	  */
+	function pageSet($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		if(empty($inPath[3])){
+			return $ret;
+		}
+		$uid = $inPath[3];
+		$user_db = new user_db;
+		$user_api = new user_api;
+		$user_info = $user_db->getUser($uid);
+		if(empty($user_info)){
+			$ret->result->code = -2; 
+			$ret->result->msg= "user do not exists"; 
+			return $ret;
+		}
+		$params->fk_user = $uid;
+//		$db_ret = $user_db->setTeacherProfile($uid,$params);
+		$api_ret = $user_api->setTeacherProfile($uid,$params);
+		if($api_ret){
+			$ret->result->code = 0; 
+		}
+		return $ret;
+	}
+    function pageSetTeacherSort($inPath){
+        $params=SJson::decode(utility_net::getPostData());
+        $ret = new stdclass;
+        $ret->result = new stdclass;
+        $ret->result->code=-1;
+        $ret->result->msg="";
+        if(empty($inPath[3])){
+            return $ret;
+        }
+//		define("DEBUG",true);
+        $uid = $inPath[3];
+        $org_id = empty($params->oid)?"0":$params->oid;
+		$org_info = user_db::getOrgUser($uid);
+		if($org_info["org_id"]!=$org_id){
+	//	$user_info = user_db::getUser($uid);
+     //   if(empty($user_info)){
+            $ret->result->code = -2;
+            $ret->result->msg= "user do not exists";
+            return $ret;
+        }
+        $sort = empty($params->sort)?"0":$params->sort;
+		$data = array("sort"=>$sort);
+        $update_sort_ret = user_db::UpdateUser($uid,$data);
+        if($update_sort_ret=== false){
+            $ret->result->code = -2;
+            $ret->result->msg = "fail update";
+        }else{
+            $ret->result->code = 0;
+            $ret->result->msg ="success";
+        }
+        return $ret;
+    }
+	function pageGetUserOrg($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		if(empty($inPath[3])){
+			return $ret;
+		}
+		$uid = $inPath[3];
+		$user_db = new user_db;
+		$user_info = $user_db->getOrgUser($uid);
+		if(empty($user_info)){
+			$ret->result->code = -2; 
+			$ret->result->msg= "profile do not exists"; 
+			return $ret;
+		}
+		$ret->data=array();
+		$ret->data = $user_info;
+		return $ret;
+	}
+
+}
+

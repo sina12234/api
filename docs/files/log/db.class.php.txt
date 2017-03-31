@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @author wangshaogang
+ */
+class log_db{
+	/*var $_db;
+	var $_config;
+	public function __construct($dbname="db_log"){
+		$this->_db = new SDb;
+		$this->_db->useConfig($dbname,"main");
+	}*/
+	public static function InitDB($dbname="db_log",$dbtype="main") {
+		redis_api::useConfig($dbname);
+		$db = new SDb();
+		$db->useConfig($dbname, $dbtype);
+		return $db;
+	}
+	public function addPlayLog($data){
+        $db = self::InitDB("db_log");
+		/*if(openlog("t_play_log",LOG_ODELAY,LOG_LOCAL4)){
+			syslog(LOG_INFO, SJson::encode($data));
+			closelog();
+		}*/
+		$key = md5("log_db.t_play_log");
+		$data->now = time(null);
+		//$v = SJson::encode($data);
+		redis_api::rPushByJson($key, $data);
+		//$table = array("t_play_log");
+		//return $db->insert($table, $data);
+	}
+    public function getAreaList($intervals,$min_date,$max_date){
+        $db = self::InitDB("db_log","query");
+//define("DEBUG",true);
+        $table=array("t_play_stat_log");
+        $condition=array(
+                    "intervals='".$intervals."'",
+                    'starttime>=\''.$min_date.'\'',
+                    'starttime<=\''.$max_date.'\'',
+
+                );
+        $items=array('areaname');
+        $group_by=array('areaname');
+        return $db->select($table,$condition,$items,$group_by,"","");
+
+    }
+    //报表
+    public function getChartsData($params){
+        $db = self::InitDB("db_log","query");
+//define("DEBUG",true);
+        $table=array("t_play_stat_log");
+        $condition=array();
+        $condition=array(
+                    "areaname='".$params['areaname']."'",
+                    "intervals='".$params['intervals']."'",
+                    "streamtype='".$params['streamtype']."'",
+                    "opname='".$params['opname']."'",
+                    "cdnid='".$params['cdnid']."'",
+                    "playmode='".$params['playmode']."'",
+                    "starttime>='".$params['min_date']."'",
+                    "starttime<='".$params['max_date']."'"
+                );
+        $order_by=array(
+                    'starttime'=>'desc'
+                );
+        return $db->select($table,$condition,"","",$order_by,"");
+    }
+    public function getReportByArea($params){
+        $db = self::InitDB("db_log","query");
+//define("DEBUG",true);
+        $table=array('t_play_stat_log');
+        $condition=array();
+        $condition=array(
+                    "intervals='".$params['intervals']."'",
+                    "streamtype='".$params['streamtype']."'",
+                    "opname='".$params['opname']."'",
+                    "cdnid='".$params['cdnid']."'",
+                    "playmode='".$params['playmode']."'",
+                    "areaname<>'all'",
+                    "starttime>='".$params['min_date']."'",
+                    "starttime<='".$params['max_date']."'"
+                );
+        $order_by=array(
+                    'starttime'=>'desc'
+                );
+        return $db->select($table,$condition,"","",$order_by,"");
+    }
+    public function getReportByOp($params){
+        $db = self::InitDB("db_log","query");
+//define("DEBUG",true);
+        $table=array('t_play_stat_log');
+        $condition=array();
+        $condition=array(
+                    "intervals='".$params['intervals']."'",
+                    "areaname='".$params['areaname']."'",
+                    "streamtype='".$params['streamtype']."'",
+                    "cdnid='".$params['cdnid']."'",
+                    "playmode='".$params['playmode']."'",
+                    "starttime>='".$params['min_date']."'",
+                    "starttime<='".$params['max_date']."'"
+                );
+        $order_by=array(
+                    'starttime'=>'desc'
+                );
+        return $db->select($table,$condition,"","",$order_by,"");
+    }
+}
+?>
+

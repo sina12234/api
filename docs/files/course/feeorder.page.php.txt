@@ -1,0 +1,237 @@
+<?php
+/**
+ * @doc http://wiki.gn100.com/doku.php?id=docs:api:course:fee
+ */
+class course_feeorder{
+	const initial=0;
+	const paying=1;
+	const success=2;
+	const deleted=-1;
+	const expired=-2;
+	const fail=-3;
+	const cancel=-4;
+	var $status = array("0"=>"initial","1"=>"paying","2"=>"success","-1"=>"deleted","-2"=>"expired",-3=>"fail",-4=>"cancel");
+	private function status2key($st){
+		if(isset($this->status[$st]))return $this->status[$st];
+		return false;
+	}
+	private function status2value($st){
+		foreach($this->status as $k=>$status){
+			if($status==$st)return $k;
+		}
+		return false;
+	}
+	private function payTypeStr2Num($str){
+		if("zhifubao" == $str){
+			return 1;
+		}else if("weixin" == $str){
+			return 2;
+		}else if("free" == $str){
+			return 3;
+		}else if("" == $str){
+			return 0;
+		}else{
+			return -1;
+		}
+	}
+	public function pageGet($inPath){
+		if(empty($inPath[3])){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+		$db = new course_db;
+		if(is_numeric($inPath[3])){
+			$order_info  = $db->getFeeOrder($inPath[3]);
+		}else{
+			$order_info  = $db->getFeeOrderByUqi($inPath[3]);
+		}
+		if(!empty($order_info)){
+			$order_info['status']=$this->status2key($order_info['status']);
+			$order_info['price']=$order_info['price']/100;
+			$order_info['price_market']=$order_info['price_market']/100;
+		}
+		//TODO自动1小时过期
+		return array("data"=>$order_info);
+	}	
+	public function pageGetFeeOrderByOutTradeId($inPath){
+		if(empty($inPath[3])){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+		$db = new course_db;
+		$order_info  = $db->getFeeOrderByOutTradeId($inPath[3]);
+		if(!empty($order_info)){
+			$order_info['status']=$this->status2key($order_info['status']);
+			$order_info['price']=$order_info['price']/100;
+			$order_info['price_market']=$order_info['price_market']/100;
+		}
+		//TODO自动1小时过期
+		return array("data"=>$order_info);
+	}	
+	public function pageAdd($inPath){
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id) || empty($params->course_id) || empty($params->price)){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+		$order_info  = array();
+		$order_info['fk_user'] = $params->user_id;
+		$order_info['fk_course'] = $params->course_id;
+		$order_info['price'] = $params->price*100;
+		$order_info['price_old'] = $params->price*100;
+		if(isset($params->price_market)){
+			$order_info['price_market'] = $params->price*100;
+		}
+		if(isset($params->ext)){
+			$order_info['ext'] = $params->ext;
+		}
+		$order_info['status'] = course_feeorder::initial;
+		$order_info['unique_order_id'] = md5($params->user_id."+".$params->course_id."+".rand(0,19999999));
+		$order_info['out_trade_id'] = $order_info['unique_order_id'];
+		$order_info['expiration_time'] = date("Y-m-d H:i:s",time()+3600);//1小时
+		$order_info['create_time'] = date("Y-m-d H:i:s",time());//1小时
+		$db = new course_db;
+		$order_id = $db->addFeeOrder($order_info);
+		if($order_id!==false){
+			return array(
+				"result"=>array("code"=>0),
+				"data"=>array(
+					"order_id"=>$order_id,
+					"unique_order_id"=>$order_info['unique_order_id'],
+					"expiration_time"=>$order_info['expiration_time'],
+				)
+			);
+		};
+		return array("result"=>array("code"=>-2,"msg"=>"add error"));
+	}
+	public function pageSetStatus($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->order_id) || empty($params->status)){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+	
+//		define("DEBUG",true);
+		$order_id = $params->order_id;
+		$status = $this->status2value($params->status);
+		$course_api = new course_api;
+		if(2 == $status){
+			$course_api->updateDiscountCodeUsed($order_id, 1);
+		}else if($status < 0){
+			$course_api->updateDiscountCodeUsed($order_id, 2);
+		}
+		$order_id = $course_api->updateFeeOrderStatus($order_id,$status);
+		if($course_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageUpdate($inPath){
+		if(empty($inPath[3])){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+		$order_id = $inPath[3];
+		$params = SJson::decode(utility_net::getPostData());
+		$order_info  = array();
+		if(!empty($params->price)){
+			$order_info['price'] = $params->price;
+		}
+		if(!empty($params->price_market)){
+			$order_info['price_market'] = $params->price_market;
+		}
+		if(!empty($params->pay_type)){
+			$order_info['pay_type'] = $this->payTypeStr2Num($params->pay_type);
+		}
+		if(!empty($params->status)){
+			$order_info['status'] = $this->status2value($params->status);
+		}
+		if(!empty($params->callback_status)){
+			$order_info['callback_status'] = $params->callback_status;
+		}
+		if(!empty($params->third_return_params)){
+			$order_info['third_return_params'] = $params->third_return_params;
+		}
+		if(!empty($params->third_order_id)){
+			$order_info['third_order_id'] = $params->third_order_id;
+		}
+		if(empty($order_info)){
+			return array("result"=>array("code"=>-1,"msg"=>"params error"));
+		}
+		$course_api = new course_api;
+		if(2 == $order_info['status']){
+			$course_api->updateDiscountCodeUsed($order_id, 1);
+		}else if($order_info['status'] < 0){
+			$course_api->updateDiscountCodeUsed($order_id, 2);
+		}
+		$db = new course_db;
+		$order_id = $db->updateFeeOrder($order_id,$order_info);
+		if($order_id!==false){
+			return array(
+				"result"=>array("code"=>0),
+			);
+		};
+		return array("result"=>array("code"=>-2,"msg"=>"update error"));
+	}
+	public function pageList($inPath){
+		//page 页数
+		if(empty($inPath[3])||!is_numeric($inPath[3])){$page = 1;}else{$page = $inPath[3];}
+		//length 每页显示数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$length = 10;}else{$length = $inPath[4];}
+		$params = SJson::decode(utility_net::getPostData());
+		$user_id =  isset($params->user_id)? $params->user_id:0;
+		$course_id = isset($parms->course_id) ?$parms->course_id:0;
+		$fee_order_id = isset($params->order_id) ?$params->order_id:0;
+		$status = isset($params->status)? $params->status:0;
+	//	define("DEBUG",true);
+		$course_api = new course_api;
+		$course_db = new course_db;	
+		$time_now = strtotime("now");
+		$update_order_info = array();	
+		//变成已过期
+		$order_info_time = $course_api->listFeeOrder($user_id,$course_id,$fee_order_id,$status,$page,$length);
+		$order_info_time_items = $order_info_time->items;	
+		foreach($order_info_time_items as $k=>$v){	
+			$time_exp = strtotime($order_info_time_items[$k]['expiration_time']);	
+		//	print_r($time_exp);
+			$status_info = $order_info_time_items[$k]['status'];
+			//只改不是过期的	
+			if($status_info != -2){
+				if($status_info == -4||$status_info == 2||$status_info ==-1 ||$status_info ==-3) continue;
+				if($time_now >$time_exp){
+					$update_order_id=$order_info_time_items[$k]['order_id'];
+					$update_order_info["status"]= -2;
+					$course_api->updateDiscountCodeUsed($update_order_id, 2);
+					$ret_course_db = $course_db->updateFeeOrder($update_order_id,$update_order_info);
+					if($ret_course_db ===false){
+						return array("result"=>array("msg"=>"ERROR！"));
+					}
+				}
+			}
+		}
+		//再筛选
+		$order_info = $course_api->listFeeOrder($user_id,$course_id,$fee_order_id,$status,$page,$length);
+		$order_info_items = $order_info->items;	
+		foreach($order_info_items as $k=>$v){
+			//重置status
+			$order_info_items[$k]['status']=$this->status[$order_info_items[$k]['status']];
+			//添加course节点
+			$order_info_items[$k]['course']= $course_api->get($order_info_items[$k]['course_id']);
+		}
+//		$order_info->items = $order_info_items;	
+	//	print_r($order_info);
+		//TODO自动1小时过期
+		return array(
+				"page"=>$order_info->page,
+				"size"=>$order_info->pageSize,
+				"total"=>$order_info->totalPage,
+				"data"=>$order_info_items,
+
+	);
+	//	return array("data"=>$order_info);
+	}	
+}
+

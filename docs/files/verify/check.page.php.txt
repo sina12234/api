@@ -1,0 +1,39 @@
+<?php
+class verify_check{
+	public function __construct($inPath){
+		return;
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","verify");
+		if(empty($conf->allow)){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	public function pageMobile($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code=-1;
+		if(empty($params->mobile) || empty($params->code)){
+			$ret->result->msg='参数错误';
+			return $ret;
+		}
+		//判断IP限制
+		$check_ret = verify_api::verifyMobile($params->mobile,$params->code);
+		if($check_ret){
+			$ret->result->code=0;
+			return $ret;
+		}
+		return $ret;
+
+	}
+}
+

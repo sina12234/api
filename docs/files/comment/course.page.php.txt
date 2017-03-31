@@ -1,0 +1,198 @@
+<?php
+class comment_course{
+	public function __construct($inPath){
+		return;
+	}
+	public function pageAddComment($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$data = new stdclass;
+		$data->fk_user = $params->user_id;
+		$data->fk_course = $params->course_id;
+		$data->comment = htmlentities($params->comment);
+		//check user in course?
+		$comment_db = new comment_db;
+		$db_ret = $comment_db->addComment($data);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->result->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageGetComment($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id) || empty($params->course_id)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getComment($params->user_id, $params->course_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageGetCommentNum($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->course_id)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getCommentNum($params->course_id, $params->user_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageGetComments($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->course_id) || !isset($params->start) || empty($params->num)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getComments($params->course_id, $params->start, $params->num, $params->user_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		foreach($data->items as $i => &$item){
+			$user = user_db::getUser($item["user_id"]);
+			$item["user_name"] = $user["name"];
+			$item["user_thumb"] = $user["thumb_small"];
+			//还差学到哪了
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageGetCommentsDesc($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->course_id) || empty($params->num)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		if(isset($params->max)){
+			$data = $comment_db->getCommentsDesc($params->course_id, $params->num, $params->max, $params->user_id);
+		}else{
+			$data = $comment_db->getCommentsDesc($params->course_id, $params->num, 0, $params->user_id);
+		}
+		if(empty($data->items)){
+			return $ret;
+		}
+		foreach($data->items as $i => &$item){
+			$user = user_db::getUser($item["user_id"]);
+			$item["user_name"] = $user["name"];
+			$item["user_thumb"] = $user["thumb_small"];
+			//还差学到哪了
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageAddDetail($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$data = new stdclass;
+		$data->fk_user = $params->user_id;
+		$data->fk_course = $params->course_id;
+		$data->avg_score = ($params->student_score + $params->desc_score + $params->explain_score + $params->service_score) / 4;
+		$data->student_score = $params->student_score;
+		$data->desc_score = $params->desc_score;
+		$data->explain_score = $params->explain_score;
+		$data->service_score = $params->service_score;
+		//check user in course?
+		$comment_db = new comment_db;
+		$db_ret = $comment_db->addDetail($data);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->result->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageGetDetail($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id) || empty($params->course_id)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getDetail($params->user_id, $params->course_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageAddTotal($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		if(empty($params->course_id)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getDetailTotal($params->course_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$item = $data->items[0];
+		$data = new stdclass;
+		$data->fk_course = $params->course_id;
+		$data->total_user = $item["total_user"];
+		$data->avg_score = $item["avg_score"];
+		$data->student_score = $item["student_score"];
+		$data->desc_score = $item["desc_score"];
+		$data->explain_score = $item["explain_score"];
+		$data->service_score = $item["service_score"];
+		$db_ret = $comment_db->addTotal($data);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->result->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageGetTotal($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->course_id)){
+			return $ret;
+		}
+		$comment_db = new comment_db;
+		$data = $comment_db->getTotal($params->course_id);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+}
+?>
+

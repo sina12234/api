@@ -1,0 +1,13 @@
+<?php
+/**
+  *
+  */
+class utility_net{
+	/**
+	  * 获取原始的post body
+	  */
+	public static function getPostData(){
+		return file_get_contents("php://input");
+	}
+}
+

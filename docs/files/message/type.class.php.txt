@@ -1,0 +1,99 @@
+<?php
+/**
+ * @docs http://wiki.gn100.com/doku.php?id=docs:api:comments
+ **/
+class message_type{
+
+	const text 		=	1;
+	const ask		=	2;
+	const cancel	=	3;
+	const agree		=	4;
+	const refuse	=	5;
+	const call		=	6;
+	const reply		=	7;
+	const stop		=	8;
+	const asking	=	9;
+	const good		= 100;
+	const online 	= 200;
+	const offline	= 201;
+	const start		= 300;
+	const close		= 301;
+	const pattern_normal	= 400;
+	const pattern_reply		= 401;
+	const pattern_notalk	= 402;
+	const reply_text	= 500;
+	const reply_text_display	= 501;
+	const class_number	= 600;
+	const microphone_test		= 700;
+	const microphone_succeed		= 701;
+	const microphone_fail		= 702;
+	const fullscreen		= 800;
+	const ask_cancel		= 1002;
+	const agree_refuse		= 1004;
+	const on_off_line		= 1006;
+	const start_close		= 1008;
+	const pattern			= 1010;
+	const microphone_result = 1012;
+	const modify_student	= 1200;
+	public static function isAutoSetUserTo($type){
+		switch($type){
+		case message_type::ask:
+		case message_type::cancel:
+		case message_type::reply:
+		case message_type::microphone_succeed:
+		case message_type::microphone_fail:
+		case message_type::fullscreen:
+		case message_type::ask_cancel:
+		case message_type::microphone_result:
+			return true;
+		default:
+			return false;
+		}
+	}
+	public static function onlyTeacher($type){
+		switch($type){
+		case message_type::agree:
+		case message_type::refuse:
+		case message_type::call:
+		case message_type::stop:
+		case message_type::asking:
+		case message_type::good:
+		case message_type::start:
+		case message_type::close:
+		case message_type::pattern_normal:
+		case message_type::pattern_reply:
+		case message_type::pattern_notalk:
+		case message_type::reply_text_display:
+		case message_type::microphone_test:
+		case message_type::agree_refuse:
+		case message_type::start_close:
+		case message_type::pattern:
+			return true;
+		default:
+			return false;
+		}
+	}
+	public static function needUsername($type){
+		switch($type){
+		case message_type::text:
+		case message_type::ask:
+		case message_type::reply_text:
+		case message_type::reply_text_display:
+			return true;
+		default:
+			return false;
+		}
+	}
+	public static function typeCategory($type){
+		switch($type){
+		case message_type::good:
+			return "good";
+		case message_type::text:
+		case message_type::reply_text:
+			return "text";
+		default:
+			return "signal";
+		}
+	}
+}
+

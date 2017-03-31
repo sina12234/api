@@ -1,0 +1,10 @@
+<?php
+class censor_test{
+	public function pageEntry($inPath){
+		$db = new censor_db;
+		//var_dump($db->addWord("何涛"));
+		//var_dump($db->delWord("何涛"));
+		//var_dump($db->searchWord("何涛"));
+	}
+}
+

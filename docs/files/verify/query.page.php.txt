@@ -1,0 +1,34 @@
+<?php
+class verify_query{
+	public function __construct($inPath){
+		return;
+	}
+	public function pageSMSByMobile($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code=-1;
+		if(empty($params->mobile)){
+			$ret->result->msg='参数错误';
+			return $ret;
+		}
+		$limit = 10;
+		$page = 1;
+		if(!empty($params->limit)){
+			$limit = $params->limit;
+		}
+		if(!empty($params->page)){
+			$page = $params->page;
+		}
+		$db = new verify_db;
+		$data = $db->getSMSByMobile($params->mobile, $limit, $page);
+		if(empty($data)){
+			$ret->result->msg = "没有这个号码";
+		}else{
+			$ret->result->code = 0;
+			$ret->data = $data;
+		}
+		return $ret;
+	}
+}
+

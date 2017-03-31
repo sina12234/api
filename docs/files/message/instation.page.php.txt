@@ -1,0 +1,235 @@
+<?php
+class message_instation{
+	public function __construct($inPath){
+		return;
+	}
+
+	public function pageGetInstation($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$ret->total = 0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id)){
+			return $ret;
+		}
+		$limit = 10;
+		if(!empty($params->limit)){
+			$limit = $params->limit;
+		}
+		$page = 1;
+		if(!empty($params->page)){
+			$page = $params->page;
+		}
+		if($limit <= 0 || $page < 1){
+			return $ret;
+		}
+		$type = "all";
+		if(!empty($params->type)){
+			$type = $params->type;
+		}
+		$message_db = new message_db;
+		$data = $message_db->getInstation($params->user_id, $limit, $page, $type);//print("start...");var_dump($data);print("end...");
+		if(empty($data->items) && $page > 1){
+			$page = 1;
+			$data = $message_db->getInstation($params->user_id, $limit, $page, $type);
+		}
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->total = $data->totalSize;
+		$ret->num = $limit;
+		$ret->page = $page;
+		$ret->type = $type;
+		$ret->data = $data->items;
+		foreach($ret->data as $i => &$item){
+			if(0 == $item["user_from_id"]){
+				$item["username"] = "系统";
+			}else{
+				$item["username"] = "没做呢";
+			}
+		}
+		return $ret;
+	}
+	public function pageGetUnreadInstationNum($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$ret->total = 0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id) || empty($params->token)){
+			return $ret;
+		}
+		//user_db::updateToken($params->token, "last_updated=current_timestamp");
+		$message_db = new message_db;
+		$data = $message_db->getUnreadInstation($params->user_id);
+		if(empty($data)){
+			return $ret;
+		}
+		$ret->total = $data["total"];
+		$ret->result->code = 0;
+		return $ret;
+	}
+
+	public function pageAddInstation($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$data = new stdclass;
+		$message_db = new message_db;
+		$data->fk_user_to = $params->user_to_id;
+		$data->fk_user_from = $params->user_from_id;
+		$data->title = htmlentities($params->title);
+		$data->content = htmlentities($params->content);
+		if(!empty($params->status)){
+			$data->status = $params->status;
+		}
+		$db_ret = $message_db->addInstation($data);
+		if($db_ret){
+			$ret->result->code = 0; 
+			$ret->result->data = $db_ret;
+		}
+		return $ret;
+	}
+	public function pageUpdateInstation($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->msg_id) || empty($params->user_id)){
+			return $ret;
+		}
+		$message_db = new message_db;
+		/*if(isset($params->status)){
+			$data = $message_db->deleteMsg($params->msg_id, $params->user_id, $params->status);
+		}else{*/
+			$data = $message_db->updateInstation($params->msg_id, $params->user_id);
+		//}
+		if($data){
+			$ret->result->code = 0;
+		}
+		return $ret;
+	}
+	public function pageDeleteInstation($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->msg_id) || empty($params->user_id)){
+			return $ret;
+		}
+		$message_db = new message_db;
+		$data = $message_db->deleteInstation($params->msg_id, $params->user_id);
+		if($data){
+			$ret->result->code = 0;
+		}
+		return $ret;
+	}
+	public function pageRemindClass($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user) || empty($params->weixin) || empty($params->heading) || empty($params->text)){
+			$ret->result->msg="缺少参数";
+			return $ret;
+		}
+		$message_db = new message_db;
+		$user_db = new user_db;
+		$parterner = $user_db->getUserParternerByUId(2, $params->user);
+		if($parterner){
+			$info = SJson::decode($parterner["parterner_uinfo"]);
+			$weixin = weixin_api::sendCustomTextMessage($info->openid, $params->weixin, $result);
+			//error_log("remindclass(".date("Y-m-d H:i:s")."): content=[$params->weixin] parterner=[".var_export($parterner, true)."] result=[".var_export($result, true)."] weixin=[".var_export($weixin, true)."]\n", 3, "/tmp/remindclass.log");
+			$log_text = "remindclass(".date("Y-m-d H:i:s")."): content=[$params->weixin] text=[$params->text] user=[$params->user] name=[".$parterner["nickname"]."] result=[".var_export($result, true)."] weixin=[".var_export($weixin, true)."]";
+			$log_text = str_replace(array("\r", "\n", "\r\n"), " ", $log_text);
+			error_log($log_text."\n", 3, "/tmp/remindclass.log_".date("Y-m-d"));
+			if(!empty($weixin)){
+				$ret->result->code = 0;
+				return $ret;
+			}
+		}
+		$data = new stdclass;
+		$data->fk_user_to = $params->user;
+		$data->fk_user_from = 0;
+		$data->title = $params->heading;
+		$data->content = $params->text;
+		$message_db->addInstation($data);
+		$ret->result->code = 0;
+		return $ret;
+	}
+	/*public function pageRemindClass($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id) || empty($params->minutes)){
+			$ret->result->msg="缺少参数";
+			return $ret;
+		}
+		$course_db = new course_db;
+		$plan = $course_db->getPlan($params->plan_id);
+		if(!$plan){
+			$ret->result->msg="没有这个上课计划";
+			return $ret;
+		}
+		$user_db = new user_db;
+		$teacher = $user_db->getUser($plan["user_plan_id"]);
+		if(!$teacher){
+			$ret->result->msg="没有这个老师";
+			return $ret;
+		}
+		$course = $course_db->getCourse($plan["course_id"]);
+		if(!$course){
+			$ret->result->msg="没有这个课程";
+			return $ret;
+		}
+		$section = $course_db->getSection($plan["section_id"]);
+		if(!$section){
+			$ret->result->msg="没有这个section";
+			return $ret;
+		}
+		$starttime = split(" ", $plan["start_time"])[1];
+		$starttime = substr($starttime, 0, 5);
+		//$weixin = "上课通知：\n您已报名“".$course["title"]."”，今日".$starttime."开课，距离上课时间还有".$params->minutes."分钟，请准时到达。\n点击地址进入课堂： https://www.gn100.com/course.plan.play/$params->plan_id";
+		$weixin = "【高能100即将开课】\n您已报名“".$course["title"]."”，".$section["name"]."，主讲老师：".$teacher["name"]."。今日".$starttime."开课，距离上课时间还有".$params->minutes."分钟，请准时通过电脑或手机进入课堂：https://www.gn100.com/course.info.show/".$plan["course_id"];
+		$heading = $course["title"] . " 上课通知(" . $params->minutes . "分钟)：";
+		$text = "您已报名“<a href='/course.plan.play/$params->plan_id'>".$course["title"]."</a>”，今日".$starttime."开课，距离上课时间还有".$params->minutes."分钟，请准时到达。";
+		$users = $course_db->getClassUser($plan["class_id"]);
+		if(empty($users->items)){
+			$ret->result->msg="这个班没有学生";
+			return $ret;
+		}
+		$message_db = new message_db;
+		$user_db = new user_db;
+		foreach($users->items as $user){
+			$parterner = $user_db->getUserParternerByUId(2, $user["user_id"]);
+			if($parterner){
+				$info = SJson::decode($parterner["parterner_uinfo"]);
+				$weixin = weixin_api::sendCustomTextMessage($info->openid, $weixin, $result);
+				error_log("remindclass(".date("Y-m-d H:i:s")."): plan_id=[$params->plan_id] parterner=[".var_export($parterner, true)."] result=[".var_export($result, true)."] weixin=[".var_export($weixin, true)."]\n", 3, "/tmp/remindclass.log");
+				if(!empty($weixin)){
+					continue;
+				}
+			}
+			$data = new stdclass;
+			$data->fk_user_to = $user["user_id"];
+			$data->fk_user_from = 0;
+			$data->title = $heading;
+			$data->content = $text;
+			$message_db->addInstation($data);
+		}
+		$ret->result->code = 0;
+		return $ret;
+	}*/
+}
+?>
+

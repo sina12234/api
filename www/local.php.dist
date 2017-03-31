@@ -1,0 +1,17 @@
+<?php
+//定义是否启用x平台用户系统 WEB-5249
+//define("XPLATFROM_LOGIN",1);
+//定义开发还是发布
+//
+//define("RELEASE",1);
+//define("DEVELOP",1);
+if(defined("DEVELOP")){
+	//设置是不是终端显示
+	SError::$CONSOLE = true;
+}else{
+	SError::$CONSOLE = false;
+}
+//设置是不是需要记录到文件
+SError::$LOG = true;
+//设置记录的文件地址
+SError::$LOGFILE="/tmp/error.php.log";

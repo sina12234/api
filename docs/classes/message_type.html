@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="utf-8"/>
+    <title>Api Documentation</title>
+    <meta name="author" content=""/>
+    <meta name="description" content=""/>
+
+    <link href="../css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/prism.css" rel="stylesheet" media="all"/>
+    <link href="../css/template.css" rel="stylesheet" media="all"/>
+    
+    <!--[if lt IE 9]>
+    <script src="../js/html5.js"></script>
+    <![endif]-->
+    <script src="../js/jquery-1.11.0.min.js"></script>
+    <script src="../js/ui/1.10.4/jquery-ui.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.smooth-scroll.js"></script>
+    <script src="../js/prism.min.js"></script>
+    <!-- TODO: Add http://jscrollpane.kelvinluck.com/ to style the scrollbars for browsers not using webkit-->
+    <script type="text/javascript">
+    function loadExternalCodeSnippets() {
+        Array.prototype.slice.call(document.querySelectorAll('pre[data-src]')).forEach(function (pre) {
+            var src = pre.getAttribute('data-src');
+            var extension = (src.match(/\.(\w+)$/) || [, ''])[1];
+            var language = 'php';
+
+            var code = document.createElement('code');
+            code.className = 'language-' + language;
+
+            pre.textContent = '';
+
+            code.textContent = 'Loading…';
+
+            pre.appendChild(code);
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.open('GET', src, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+
+                    if (xhr.status < 400 && xhr.responseText) {
+                        code.textContent = xhr.responseText;
+
+                        Prism.highlightElement(code);
+                    }
+                    else if (xhr.status >= 400) {
+                        code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                    }
+                    else {
+                        code.textContent = '✖ Error: File does not exist or is empty';
+                    }
+                }
+            };
+
+            xhr.send(null);
+        });
+    }
+
+    $(document).ready(function(){
+        loadExternalCodeSnippets();
+    });
+    $('#source-view').on('shown', function () {
+        loadExternalCodeSnippets();
+    })
+</script>
+
+    <link rel="shortcut icon" href="../images/favicon.ico"/>
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png"/>
+    <link rel="apple-touch-icon" sizes="72x72" href="../images/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon" sizes="114x114" href="../images/apple-touch-icon-114x114.png"/>
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <i class="icon-ellipsis-vertical"></i>
+            </a>
+            <a class="brand" href="../index.html">Api Documentation</a>
+
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                                        <li class="dropdown" id="charts-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Charts <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../graphs/class.html">
+                                    <i class="icon-list-alt"></i>&#160;Class hierarchy diagram
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="reports-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Reports <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../reports/errors.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">2074</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/markers.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Markers <span class="label label-info pull-right">11</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/deprecated.html">
+                                                                                                            <i class="icon-list-alt"></i>&#160;Deprecated <span class="label label-info pull-right">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--<div class="go_to_top">-->
+    <!--<a href="#___" style="color: inherit">Back to top&#160;&#160;<i class="icon-upload icon-white"></i></a>-->
+    <!--</div>-->
+</div>
+
+<div id="___" class="container-fluid">
+        <section class="row-fluid">
+        <div class="span2 sidebar">
+                                <div class="accordion" style="margin-bottom: 0">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-467793348"></a>
+                                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            </div>
+            <div id="namespace-467793348" class="accordion-body collapse in">
+                <div class="accordion-inner">
+
+                    
+                    <ul>
+                                                                                                    <li class="class"><a href="../classes/activity_2014.html">activity_2014</a></li>
+                                                    <li class="class"><a href="../classes/activity_db.html">activity_db</a></li>
+                                                    <li class="class"><a href="../classes/admin_db.html">admin_db</a></li>
+                                                    <li class="class"><a href="../classes/admin_user.html">admin_user</a></li>
+                                                    <li class="class"><a href="../classes/censor_db.html">censor_db</a></li>
+                                                    <li class="class"><a href="../classes/censor_test.html">censor_test</a></li>
+                                                    <li class="class"><a href="../classes/comment_course.html">comment_course</a></li>
+                                                    <li class="class"><a href="../classes/comment_db.html">comment_db</a></li>
+                                                    <li class="class"><a href="../classes/course_adminstatus.html">course_adminstatus</a></li>
+                                                    <li class="class"><a href="../classes/course_api.html">course_api</a></li>
+                                                    <li class="class"><a href="../classes/course_cate.html">course_cate</a></li>
+                                                    <li class="class"><a href="../classes/course_class.html">course_class</a></li>
+                                                    <li class="class"><a href="../classes/course_db.html">course_db</a></li>
+                                                    <li class="class"><a href="../classes/course_detail.html">course_detail</a></li>
+                                                    <li class="class"><a href="../classes/course_discount.html">course_discount</a></li>
+                                                    <li class="class"><a href="../classes/course_feeorder.html">course_feeorder</a></li>
+                                                    <li class="class"><a href="../classes/course_grade.html">course_grade</a></li>
+                                                    <li class="class"><a href="../classes/course_info.html">course_info</a></li>
+                                                    <li class="class"><a href="../classes/course_live.html">course_live</a></li>
+                                                    <li class="class"><a href="../classes/course_mydiscount.html">course_mydiscount</a></li>
+                                                    <li class="class"><a href="../classes/course_order.html">course_order</a></li>
+                                                    <li class="class"><a href="../classes/course_plan.html">course_plan</a></li>
+                                                    <li class="class"><a href="../classes/course_section.html">course_section</a></li>
+                                                    <li class="class"><a href="../classes/course_status.html">course_status</a></li>
+                                                    <li class="class"><a href="../classes/course_video.html">course_video</a></li>
+                                                    <li class="class"><a href="../classes/file_db.html">file_db</a></li>
+                                                    <li class="class"><a href="../classes/file_info.html">file_info</a></li>
+                                                    <li class="class"><a href="../classes/live_api.html">live_api</a></li>
+                                                    <li class="class"><a href="../classes/live_chat.html">live_chat</a></li>
+                                                    <li class="class"><a href="../classes/live_db.html">live_db</a></li>
+                                                    <li class="class"><a href="../classes/live_file.html">live_file</a></li>
+                                                    <li class="class"><a href="../classes/live_play.html">live_play</a></li>
+                                                    <li class="class"><a href="../classes/live_publish.html">live_publish</a></li>
+                                                    <li class="class"><a href="../classes/live_video.html">live_video</a></li>
+                                                    <li class="class"><a href="../classes/log_db.html">log_db</a></li>
+                                                    <li class="class"><a href="../classes/log_log.html">log_log</a></li>
+                                                    <li class="class"><a href="../classes/message_api.html">message_api</a></li>
+                                                    <li class="class"><a href="../classes/message_chat.html">message_chat</a></li>
+                                                    <li class="class"><a href="../classes/message_db.html">message_db</a></li>
+                                                    <li class="class"><a href="../classes/message_http.html">message_http</a></li>
+                                                    <li class="class"><a href="../classes/message_instation.html">message_instation</a></li>
+                                                    <li class="class"><a href="../classes/message_type.html">message_type</a></li>
+                                                    <li class="class"><a href="../classes/rbac_db.html">rbac_db</a></li>
+                                                    <li class="class"><a href="../classes/rbac_info.html">rbac_info</a></li>
+                                                    <li class="class"><a href="../classes/redis_api.html">redis_api</a></li>
+                                                    <li class="class"><a href="../classes/region_db.html">region_db</a></li>
+                                                    <li class="class"><a href="../classes/region_main.html">region_main</a></li>
+                                                    <li class="class"><a href="../classes/seek_course.html">seek_course</a></li>
+                                                    <li class="class"><a href="../classes/seek_course1.html">seek_course1</a></li>
+                                                    <li class="class"><a href="../classes/SphinxClient.html">SphinxClient</a></li>
+                                                    <li class="class"><a href="../classes/task_db.html">task_db</a></li>
+                                                    <li class="class"><a href="../classes/user_api.html">user_api</a></li>
+                                                    <li class="class"><a href="../classes/user_auth.html">user_auth</a></li>
+                                                    <li class="class"><a href="../classes/user_const.html">user_const</a></li>
+                                                    <li class="class"><a href="../classes/user_db.html">user_db</a></li>
+                                                    <li class="class"><a href="../classes/user_info.html">user_info</a></li>
+                                                    <li class="class"><a href="../classes/user_organization.html">user_organization</a></li>
+                                                    <li class="class"><a href="../classes/user_parterner.html">user_parterner</a></li>
+                                                    <li class="class"><a href="../classes/user_profile.html">user_profile</a></li>
+                                                    <li class="class"><a href="../classes/user_student.html">user_student</a></li>
+                                                    <li class="class"><a href="../classes/user_task.html">user_task</a></li>
+                                                    <li class="class"><a href="../classes/user_teacher.html">user_teacher</a></li>
+                                                    <li class="class"><a href="../classes/user_test.html">user_test</a></li>
+                                                    <li class="class"><a href="../classes/user_token.html">user_token</a></li>
+                                                    <li class="class"><a href="../classes/utility_ip.html">utility_ip</a></li>
+                                                    <li class="class"><a href="../classes/utility_mobile.html">utility_mobile</a></li>
+                                                    <li class="class"><a href="../classes/utility_net.html">utility_net</a></li>
+                                                    <li class="class"><a href="../classes/utility_valid.html">utility_valid</a></li>
+                                                    <li class="class"><a href="../classes/verify_api.html">verify_api</a></li>
+                                                    <li class="class"><a href="../classes/verify_check.html">verify_check</a></li>
+                                                    <li class="class"><a href="../classes/verify_db.html">verify_db</a></li>
+                                                    <li class="class"><a href="../classes/verify_query.html">verify_query</a></li>
+                                                    <li class="class"><a href="../classes/verify_send.html">verify_send</a></li>
+                                                    <li class="class"><a href="../classes/verify_test.html">verify_test</a></li>
+                                                    <li class="class"><a href="../classes/weixin_api.html">weixin_api</a></li>
+                                                    <li class="class"><a href="../classes/weixin_auth.html">weixin_auth</a></li>
+                                                    <li class="class"><a href="../classes/weixin_db.html">weixin_db</a></li>
+                                                    <li class="class"><a href="../classes/weixin_message.html">weixin_message</a></li>
+                                            </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </section>
+    <section class="row-fluid">
+        <div class="span10 offset2">
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <nav>
+                                                <a href="../namespaces/default.html">\</a> <i class="icon-level-up"></i>
+                                            </nav>
+                    <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
+
+                    <h1><small>\</small>message_type</h1>
+                    <p><em></em></p>
+                    
+                    
+                                        
+                    <section id="summary">
+                        <h2>Summary</h2>
+                        <section class="row-fluid heading">
+                            <section class="span4">
+                                <a href="#methods">Methods</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#properties">Properties</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#constants">Constants</a>
+                            </section>
+                        </section>
+                        <section class="row-fluid public">
+                            <section class="span4">
+                                                                    <a href="../classes/message_type.html#method_isAutoSetUserTo" class="">isAutoSetUserTo()</a><br />
+                                                                    <a href="../classes/message_type.html#method_onlyTeacher" class="">onlyTeacher()</a><br />
+                                                                    <a href="../classes/message_type.html#method_needUsername" class="">needUsername()</a><br />
+                                                                    <a href="../classes/message_type.html#method_typeCategory" class="">typeCategory()</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No public properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <a href="../classes/message_type.html#constant_text" class="">text</a><br />
+                                                                    <a href="../classes/message_type.html#constant_ask" class="">ask</a><br />
+                                                                    <a href="../classes/message_type.html#constant_cancel" class="">cancel</a><br />
+                                                                    <a href="../classes/message_type.html#constant_agree" class="">agree</a><br />
+                                                                    <a href="../classes/message_type.html#constant_refuse" class="">refuse</a><br />
+                                                                    <a href="../classes/message_type.html#constant_call" class="">call</a><br />
+                                                                    <a href="../classes/message_type.html#constant_reply" class="">reply</a><br />
+                                                                    <a href="../classes/message_type.html#constant_stop" class="">stop</a><br />
+                                                                    <a href="../classes/message_type.html#constant_asking" class="">asking</a><br />
+                                                                    <a href="../classes/message_type.html#constant_good" class="">good</a><br />
+                                                                    <a href="../classes/message_type.html#constant_online" class="">online</a><br />
+                                                                    <a href="../classes/message_type.html#constant_offline" class="">offline</a><br />
+                                                                    <a href="../classes/message_type.html#constant_start" class="">start</a><br />
+                                                                    <a href="../classes/message_type.html#constant_close" class="">close</a><br />
+                                                                    <a href="../classes/message_type.html#constant_pattern_normal" class="">pattern_normal</a><br />
+                                                                    <a href="../classes/message_type.html#constant_pattern_reply" class="">pattern_reply</a><br />
+                                                                    <a href="../classes/message_type.html#constant_pattern_notalk" class="">pattern_notalk</a><br />
+                                                                    <a href="../classes/message_type.html#constant_reply_text" class="">reply_text</a><br />
+                                                                    <a href="../classes/message_type.html#constant_reply_text_display" class="">reply_text_display</a><br />
+                                                                    <a href="../classes/message_type.html#constant_class_number" class="">class_number</a><br />
+                                                                    <a href="../classes/message_type.html#constant_microphone_test" class="">microphone_test</a><br />
+                                                                    <a href="../classes/message_type.html#constant_microphone_succeed" class="">microphone_succeed</a><br />
+                                                                    <a href="../classes/message_type.html#constant_microphone_fail" class="">microphone_fail</a><br />
+                                                                    <a href="../classes/message_type.html#constant_fullscreen" class="">fullscreen</a><br />
+                                                                    <a href="../classes/message_type.html#constant_ask_cancel" class="">ask_cancel</a><br />
+                                                                    <a href="../classes/message_type.html#constant_agree_refuse" class="">agree_refuse</a><br />
+                                                                    <a href="../classes/message_type.html#constant_on_off_line" class="">on_off_line</a><br />
+                                                                    <a href="../classes/message_type.html#constant_start_close" class="">start_close</a><br />
+                                                                    <a href="../classes/message_type.html#constant_pattern" class="">pattern</a><br />
+                                                                    <a href="../classes/message_type.html#constant_microphone_result" class="">microphone_result</a><br />
+                                                                    <a href="../classes/message_type.html#constant_modify_student" class="">modify_student</a><br />
+                                                            </section>
+                        </section>
+                        <section class="row-fluid protected">
+                            <section class="span4">
+                                                                    <em>No protected methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No protected properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                        <section class="row-fluid private">
+                            <section class="span4">
+                                                                    <em>No private methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No private properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                    </section>
+                </div>
+                <aside class="span4 detailsbar">
+                                        
+                    
+                    <dl>
+                        <dt>File</dt>
+                            <dd><a href="../files/message.type.class.html"><div class="path-wrapper">message/type.class.php</div></a></dd>
+                                                <dt>Package</dt>
+                            <dd><div class="namespace-wrapper">Default</div></dd>
+                                                <dt>Class hierarchy</dt>
+                            <dd class="hierarchy">
+                                                                                                                                                                    <div class="namespace-wrapper">\message_type</div>
+                            </dd>
+
+                        
+                        
+                        
+                        
+                                                                        </dl>
+                    <h2>Tags</h2>
+                    <table class="table table-condensed">
+                                            <tr>
+                            <th>
+                                docs
+                            </th>
+                            <td>
+                                                                    <p><a href="http://wiki.gn100.com/doku.php?id=docs:api:comments">http://wiki.gn100.com/doku.php?id=docs:api:comments</a></p>
+                                                            </td>
+                        </tr>
+                                        </table>
+                </aside>
+            </div>
+
+                                    <a id="constants" name="constants"></a>
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <h2>Constants</h2>
+                </div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_text" name="constant_text" class="anchor"></a>
+            <article id="constant_text" class="constant">
+                <h3 class="">text</h3>
+                <pre class="signature">text</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_ask" name="constant_ask" class="anchor"></a>
+            <article id="constant_ask" class="constant">
+                <h3 class="">ask</h3>
+                <pre class="signature">ask</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_cancel" name="constant_cancel" class="anchor"></a>
+            <article id="constant_cancel" class="constant">
+                <h3 class="">cancel</h3>
+                <pre class="signature">cancel</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_agree" name="constant_agree" class="anchor"></a>
+            <article id="constant_agree" class="constant">
+                <h3 class="">agree</h3>
+                <pre class="signature">agree</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_refuse" name="constant_refuse" class="anchor"></a>
+            <article id="constant_refuse" class="constant">
+                <h3 class="">refuse</h3>
+                <pre class="signature">refuse</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_call" name="constant_call" class="anchor"></a>
+            <article id="constant_call" class="constant">
+                <h3 class="">call</h3>
+                <pre class="signature">call</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_reply" name="constant_reply" class="anchor"></a>
+            <article id="constant_reply" class="constant">
+                <h3 class="">reply</h3>
+                <pre class="signature">reply</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_stop" name="constant_stop" class="anchor"></a>
+            <article id="constant_stop" class="constant">
+                <h3 class="">stop</h3>
+                <pre class="signature">stop</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_asking" name="constant_asking" class="anchor"></a>
+            <article id="constant_asking" class="constant">
+                <h3 class="">asking</h3>
+                <pre class="signature">asking</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_good" name="constant_good" class="anchor"></a>
+            <article id="constant_good" class="constant">
+                <h3 class="">good</h3>
+                <pre class="signature">good</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_online" name="constant_online" class="anchor"></a>
+            <article id="constant_online" class="constant">
+                <h3 class="">online</h3>
+                <pre class="signature">online</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_offline" name="constant_offline" class="anchor"></a>
+            <article id="constant_offline" class="constant">
+                <h3 class="">offline</h3>
+                <pre class="signature">offline</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_start" name="constant_start" class="anchor"></a>
+            <article id="constant_start" class="constant">
+                <h3 class="">start</h3>
+                <pre class="signature">start</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_close" name="constant_close" class="anchor"></a>
+            <article id="constant_close" class="constant">
+                <h3 class="">close</h3>
+                <pre class="signature">close</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_pattern_normal" name="constant_pattern_normal" class="anchor"></a>
+            <article id="constant_pattern_normal" class="constant">
+                <h3 class="">pattern_normal</h3>
+                <pre class="signature">pattern_normal</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_pattern_reply" name="constant_pattern_reply" class="anchor"></a>
+            <article id="constant_pattern_reply" class="constant">
+                <h3 class="">pattern_reply</h3>
+                <pre class="signature">pattern_reply</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_pattern_notalk" name="constant_pattern_notalk" class="anchor"></a>
+            <article id="constant_pattern_notalk" class="constant">
+                <h3 class="">pattern_notalk</h3>
+                <pre class="signature">pattern_notalk</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_reply_text" name="constant_reply_text" class="anchor"></a>
+            <article id="constant_reply_text" class="constant">
+                <h3 class="">reply_text</h3>
+                <pre class="signature">reply_text</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_reply_text_display" name="constant_reply_text_display" class="anchor"></a>
+            <article id="constant_reply_text_display" class="constant">
+                <h3 class="">reply_text_display</h3>
+                <pre class="signature">reply_text_display</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_class_number" name="constant_class_number" class="anchor"></a>
+            <article id="constant_class_number" class="constant">
+                <h3 class="">class_number</h3>
+                <pre class="signature">class_number</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_microphone_test" name="constant_microphone_test" class="anchor"></a>
+            <article id="constant_microphone_test" class="constant">
+                <h3 class="">microphone_test</h3>
+                <pre class="signature">microphone_test</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_microphone_succeed" name="constant_microphone_succeed" class="anchor"></a>
+            <article id="constant_microphone_succeed" class="constant">
+                <h3 class="">microphone_succeed</h3>
+                <pre class="signature">microphone_succeed</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_microphone_fail" name="constant_microphone_fail" class="anchor"></a>
+            <article id="constant_microphone_fail" class="constant">
+                <h3 class="">microphone_fail</h3>
+                <pre class="signature">microphone_fail</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_fullscreen" name="constant_fullscreen" class="anchor"></a>
+            <article id="constant_fullscreen" class="constant">
+                <h3 class="">fullscreen</h3>
+                <pre class="signature">fullscreen</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_ask_cancel" name="constant_ask_cancel" class="anchor"></a>
+            <article id="constant_ask_cancel" class="constant">
+                <h3 class="">ask_cancel</h3>
+                <pre class="signature">ask_cancel</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_agree_refuse" name="constant_agree_refuse" class="anchor"></a>
+            <article id="constant_agree_refuse" class="constant">
+                <h3 class="">agree_refuse</h3>
+                <pre class="signature">agree_refuse</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_on_off_line" name="constant_on_off_line" class="anchor"></a>
+            <article id="constant_on_off_line" class="constant">
+                <h3 class="">on_off_line</h3>
+                <pre class="signature">on_off_line</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_start_close" name="constant_start_close" class="anchor"></a>
+            <article id="constant_start_close" class="constant">
+                <h3 class="">start_close</h3>
+                <pre class="signature">start_close</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_pattern" name="constant_pattern" class="anchor"></a>
+            <article id="constant_pattern" class="constant">
+                <h3 class="">pattern</h3>
+                <pre class="signature">pattern</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_microphone_result" name="constant_microphone_result" class="anchor"></a>
+            <article id="constant_microphone_result" class="constant">
+                <h3 class="">microphone_result</h3>
+                <pre class="signature">microphone_result</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="constant_modify_student" name="constant_modify_student" class="anchor"></a>
+            <article id="constant_modify_student" class="constant">
+                <h3 class="">modify_student</h3>
+                <pre class="signature">modify_student</pre>
+                <p><em></em></p>
+                
+            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                            
+                        
+                                    <a id="methods" name="methods"></a>
+            <div class="row-fluid">
+                <div class="span8 content class"><h2>Methods</h2></div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_isAutoSetUserTo" name="method_isAutoSetUserTo" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">isAutoSetUserTo()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">isAutoSetUserTo(  <span class="argument">$type</span>) </pre>
+                <p><em></em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$type </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                            <span class="label label-info">static</span>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_onlyTeacher" name="method_onlyTeacher" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">onlyTeacher()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">onlyTeacher(  <span class="argument">$type</span>) </pre>
+                <p><em></em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$type </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                            <span class="label label-info">static</span>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_needUsername" name="method_needUsername" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">needUsername()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">needUsername(  <span class="argument">$type</span>) </pre>
+                <p><em></em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$type </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                            <span class="label label-info">static</span>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_typeCategory" name="method_typeCategory" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">typeCategory()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">typeCategory(  <span class="argument">$type</span>) </pre>
+                <p><em></em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$type </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                            <span class="label label-info">static</span>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                                    </div>
+    </section>
+
+    <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="source-view-label">type.class.php</h3>
+        </div>
+        <div class="modal-body">
+            <pre data-src="../files/message/type.class.php.txt" class="language-php line-numbers"></pre>
+        </div>
+    </div>
+
+    <footer class="row-fluid">
+        <section class="span10 offset2">
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <section class="row-fluid footer-sections">
+                        <section class="span4">
+                                                        <h1><i class="icon-code"></i></h1>
+                            <div>
+                                <ul>
+                                                                    </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-bar-chart"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../graphs/class.html">Class Hierarchy Diagram</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-pushpin"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../reports/errors.html">Errors</a></li>
+                                    <li><a href="../reports/markers.html">Markers</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                    </section>
+                </section>
+            </section>
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <hr />
+                    Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
+                    on June 25th, 2015 at 14:41.
+                </section>
+            </section>
+        </section>
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<?php
+class course_class{
+	public function pageList($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$course_id = (int)$inPath[3];
+		$course_api = new course_api;
+		$classlist = $course_api->getclasslist($course_id);
+		if($classlist === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the class is not found!";
+			return $ret;
+		}
+		return $classlist;
+	}
+	public function pageGet($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+      /*  if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}*/
+		$class_id = (int)$inPath[3];		
+		$course_api = new course_api;
+		$classlist = $course_api->getclass($class_id);
+		if($classlist === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the class is not found!";
+			return $ret;
+		}
+   //     print_r($gradelist);
+		return $classlist;
+	}
+	public function pagedel($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The sid is not found!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		if (empty($inPath[4]) || !is_numeric($inPath[4])) {
+			return $ret;
+		}
+		$cid = (int)$inPath[4];
+		$class_id = (int)$inPath[3];
+		//在这里强制转换了下
+		$course_api = new course_api;
+	//删除班级信息
+		$ret_class = $course_api->delClass($cid,$class_id,$sid = null);
+		if($ret_class === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail del";
+		}elseif($ret_class=="failed"){
+			$ret->result->code = -4;
+			$ret->result->msg ="student has change";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageGenClassId($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$cid = $inPath[3];
+		//$user_db = new user_db;
+		//$user = $user_db->getUser($cid);
+		//TODO判断老师是否有权限
+//		define("DEBUG",true);
+		$course_api = new course_api;
+		$class_id = $course_api->genclassId($cid);
+		if(!empty($class_id)){
+		//	unset($ret->result);
+			$ret->data=array("cid"=>(int)$cid,"class_id"=>(int)$class_id);
+			$ret->result->code = 0;
+			$ret->result->msg= "success";
+		}else{
+			$ret->result->code = -2;
+		}
+		return $ret;
+	}
+	public function pageUpdate($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$class_id = (int)$inPath[3];
+		$params = SJson::decode(utility_net::getPostData());
+//		define("DEBUG",true);
+		$class = array();
+		if(empty($params->name)){
+			$ret->result->code = -3;
+			$ret->result->msg = "the class name is empty!";
+			return $ret;			
+			exit();
+		}else{
+		//	$class = $params;
+	  		$time = date("Y-m-d H:i:s");
+			$class["fk_user"] = $params->user_id;
+			$class["fk_user_class"] = $params->user_class_id;
+			$class["name"] = $params->name;
+			$class["descript"] = empty($params->descript)? '请输入章节描述':$params->descript;
+			$class["last_updated"] = $time;
+			$class["max_user"] = $params->max_user;
+			$class["min_user"] = $params->min_user;
+			$class["status"] = $params->status;
+		
+
+		}
+		$course_api = new course_api;
+		$course_api->updateclass($class_id,$class);
+		//define("DEBUG",true);
+		if($course_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageAdd($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The cid is not found!";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$cid = (int)$inPath[3];
+		//这里强制转换了下
+		$params = SJson::decode(utility_net::getPostData(),true);
+	//	define("DEBUG",true);
+		$class = array();
+/*			$array_type = array("min"=>"1","max"=>"2");
+			$time = date("Y-m-d H:i:s");
+			$class["user_class_id"]  = 153;
+			$class["user_id"] 		 = 153;
+			$class["name"]			 = "testtest";
+	//		$class["descript"] 		 = empty($params->descript)? '请输入章节描述':$params->descript;
+			$class["type"]			 = 2;
+			$class["max_user"]  	 = 100;
+			$class["min_user"] 		 = 20;
+	   		//$class["user_total"] 	 = $params->user_total;
+			$class["status"] 	 	 = 1;
+*/
+		if(empty($params->name)){
+			$ret->result->code = -3;
+			$ret->result->msg = "the class name is empty!";
+			return $ret;		
+			exit();
+		}else{
+			$array_type = array("min"=>"1","max"=>"2");
+			$time = date("Y-m-d H:i:s");
+			$class["user_class_id"]  = $params->user_class_id;
+			$class["user_id"] 		 = $params->user_id;
+			$class["name"]			 = $params->name;
+			$class["descript"] 		 = empty($params->descript)? '请输入章节描述':$params->descript;
+			$class["type"]			 = $array_type["$params->type"];
+			$class["max_user"]  	 = $params->max_user;
+			$class["min_user"] 		 = $params->min_user;
+	   		//$class["user_total"] 	 = $params->user_total;
+			$class["status"] 	 	 = $params->status;
+		}
+
+		$course_api = new course_api;
+		$course_api->addclass($cid,$class);
+		//define("DEBUG",true);
+		if($course_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+}
+

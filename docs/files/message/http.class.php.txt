@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @author hetao fanbin
+ */
+class message_http{
+	/*public static function InitDB($dbname="db_message",$dbtype="main") {
+		redis_api::useConfig($dbname);
+		$db = new SDb();
+		$db->useConfig($dbname, $dbtype);
+		return $db;
+	}*/
+
+	public function addText($params){
+		$conf = SConfig::getConfig(ROOT_CONFIG."/services.conf","message");
+		$data = new stdclass;
+		$data->Password = $conf->apikey;
+		$data->UserIdFrom = intval($params->user_from_id);
+		$data->UserTokenFrom = $params->user_from_token;
+		$data->PlanId = intval($params->plan_id);
+		if(!empty($params->user_to_id)){
+			$data->UserIdTo = intval($params->user_to_id);
+		}else{
+			$data->UserIdTo = 0;
+		}
+		$data->ContentType = intval($params->type);
+		$data->Content = $params->content;
+		if(!empty($params->live_second)){
+			$data->LiveSecond = intval($params->live_second);
+		}else{
+			$data->LiveSecond = 0;
+		}
+		$data->LastUpdate = date("Y-m-d H:i:s");
+		$data->MessageType = "text";
+		$url = $conf->gateway . "/msg/add";
+		//$url = $url . "?data=" . SJson::encode($data);
+		$ret = SHttp::post($url,array("data"=>SJson::encode($data)));
+		return $ret;
+	}
+	public function addGood($params){
+		$conf = SConfig::getConfig(ROOT_CONFIG."/services.conf","message");
+		$data = new stdclass;
+		$data->Password = $conf->apikey;
+		$data->UserIdFrom = intval($params->user_from_id);
+		$data->UserTokenFrom = $params->user_from_token;
+		$data->PlanId = intval($params->plan_id);
+		if(!empty($params->user_to_id)){
+			$data->UserIdTo = intval($params->user_to_id);
+		}else{
+			$data->UserIdTo = 0;
+		}
+		$data->ContentType = intval($params->type);
+		$data->Content = $params->content;
+		if(!empty($params->live_second)){
+			$data->LiveSecond = intval($params->live_second);
+		}else{
+			$data->LiveSecond = 0;
+		}
+		$data->LastUpdate = date("Y-m-d H:i:s");
+		$data->MessageType = "good";
+		$url = $conf->gateway . "/msg/add";
+		//$url = $url . "?data=" . SJson::encode($data);
+		$ret = SHttp::post($url,array("data"=>SJson::encode($data)));
+		return $ret;
+	}
+
+	public function addSignal($params){
+		$conf = SConfig::getConfig(ROOT_CONFIG."/services.conf","message");
+		$data = new stdclass;
+		$data->Password = $conf->apikey;
+		$data->UserIdFrom = intval($params->user_from_id);
+		$data->UserTokenFrom = $params->user_from_token;
+		if(!empty($params->user_from_token)){
+			$data->UserFlagFrom = substr($params->user_from_token, 0, 5);
+		}
+		$data->PlanId = intval($params->plan_id);
+		if(!empty($params->user_to_id)){
+			$data->UserIdTo = intval($params->user_to_id);
+		}else{
+			$data->UserIdTo = 0;
+		}
+		if(!empty($params->user_to_token)){
+			//$data->UserTokenTo = $params->user_to_token;
+			$data->UserFlagTo = substr($params->user_to_token, 0, 5);
+		}
+		$data->ContentType = intval($params->type);
+		$data->Content = $params->content;
+		if(!empty($params->live_second)){
+			$data->LiveSecond = intval($params->live_second);
+		}else{
+			$data->LiveSecond = 0;
+		}
+		$data->LastUpdate = date("Y-m-d H:i:s");
+		$data->MessageType = "signal";
+		$url = $conf->gateway . "/msg/add";
+		//$url = $url . "?data=" . SJson::encode($data);
+		$ret = SHttp::post($url,array("data"=>SJson::encode($data)));
+		return $ret;
+	}
+}
+?>
+

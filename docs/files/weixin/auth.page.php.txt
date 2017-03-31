@@ -1,0 +1,35 @@
+<?php
+
+class weixin_auth{
+	public function __construct($inPath){
+		return;
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","weixin");
+		if(empty($conf->allow)){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+
+	public function pageGet($inPath){
+		$config = weixin_api::getConfig();
+		$ret = new stdclass;
+		$ret->data =  new stdclass;
+		if(!empty($config)){
+			unset($config['pk_config']);
+			unset($config['create_time']);
+			$ret->data=$config;
+		}
+		return $ret;
+	}
+}
+
+

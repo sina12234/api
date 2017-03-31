@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdoc>
+	<title>Api Documentation</title>
+	<parser>
+		<target>/home/hetao/api/app/</target>
+		 <encoding>utf8</encoding>
+		 <extensions>
+			 <extension>php</extension>
+		 </extensions>
+	</parser>
+	<transformer>
+	    <target>/home/hetao/api/docs</target>
+	</transformer>
+	<files>
+		<directory>/home/hetao/api/app</directory>
+	</files>
+</phpdoc>

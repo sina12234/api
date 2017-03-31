@@ -1,0 +1,91 @@
+<?php
+class course_mydiscount{
+	public function __construct($inPath){
+		return;
+	}
+	private function discountCodeUsedStatus2Value($status){
+		if(0 == $status){
+			return "可修改";
+		}else if(1 == $status){
+			return "付款成功";
+		}else if(2 == $status){
+			return "订单过期";
+		}else if(3 == $status){
+			return "未付款";
+		}else{
+			return "有问题";
+		}
+	}
+	public function pageGetDiscountCodeUsedsByCodeIdUserId($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$params = SJson::decode(utility_net::getPostData());
+		$course_db = new course_db;
+		$discount_code = $course_db->getDiscountCodeByCode($params->code);
+		if(!$discount_code){
+			$ret->result->msg = "没有这个优惠码";
+			return $ret;
+		}
+		$limit = empty($params->limit)?0:$params->limit;
+		$page = empty($params->page)?1:$params->page;
+		$data = $course_db->getDiscountCodeUsedsByCodeIdUserId($discount_code["discount_code_id"], $params->user_id, $limit, $page);
+		$ret->result->code = 0;
+		if(empty($data->items)){
+			$ret->total = 0;
+			return $ret;
+		}
+		foreach($data->items as $k=>&$v){
+			$v["status_v"] = $this->discountCodeUsedStatus2Value($v["status"]);
+			$order = $course_db->getFeeOrder($v["order_id"]);
+			if($order){
+				//$v["order"] = $order;
+				$v["unique_order_id"] = $order["unique_order_id"];
+				$course = $course_db->getCourse($order["course_id"]);
+				if($course){
+					$v["course"] = $course;
+				}
+			}
+		}
+		$ret->total = $data->totalSize;
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageGetDiscountCodeUsedsByUserId($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$params = SJson::decode(utility_net::getPostData());
+		$course_db = new course_db;
+		$limit = empty($params->limit)?0:$params->limit;
+		$page = empty($params->page)?1:$params->page;
+		$data = $course_db->getDiscountCodeUsedsByUserId($params->user_id, $params->statuses, $limit, $page);
+		$ret->result->code = 0;
+		if(empty($data->items)){
+			$ret->total = 0;
+			return $ret;
+		}
+		foreach($data->items as $k=>&$v){
+			$v["status_v"] = $this->discountCodeUsedStatus2Value($v["status"]);
+			$discount_code = $course_db->getDiscountCodeById($v["discount_code_id"]);
+			if($discount_code){
+				$v["discount_code"] = $discount_code;
+			}
+			$order = $course_db->getFeeOrder($v["order_id"]);
+			if($order){
+				//$v["order"] = $order;
+				$v["unique_order_id"] = $order["unique_order_id"];
+				$course = $course_db->getCourse($order["course_id"]);
+				if($course){
+					$v["course"] = $course;
+				}
+			}
+		}
+		$ret->total = $data->totalSize;
+		$ret->data = $data->items;
+		return $ret;
+	}
+}
+

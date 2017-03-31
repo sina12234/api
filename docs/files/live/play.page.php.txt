@@ -1,0 +1,145 @@
+<?php
+/**
+  * 直播权限设置，文档地址 http://wiki.gn100.com/doku.php?id=docs:api:live
+  * @author hetao 2014/12/16
+  */
+class live_play{
+	/**
+	 * 校验提交的服务器权限，仅在配置文件里的才可以提交
+	 * */
+	public function __construct($inPath){
+		//for dev
+		return;
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","live");
+		if(empty($conf->allow)){
+			error_log(__LINE__."\n",3,"/tmp/live.error.log");
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				error_log(__LINE__."\n",3,"/tmp/live.error.log");
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			error_log(__LINE__."\n",3,"/tmp/live.error.log");
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	/**
+	  * 获取播放地址
+	  */
+	public function pageGetLiveUrl($inPath){
+		$r = new stdclass;
+		$r->data=array();
+		$params=SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id) || empty($params->ip)){
+			return array("result"=>array("code"=>-1));
+		}
+		$db = new live_db;
+		$publish = $db->getPublishByPlanID($params->plan_id);
+		if(empty($publish['stream_name'])){
+			return array("result"=>array("code"=>-2,"msg"=>"plan_id error"));
+		}
+		$r->data['stream_name'] = $publish['stream_name'];
+		$r->data['app_name'] = $publish['app_name'];
+		$r->data['live_call'] = $publish['live_call'];
+		$host="";
+		if(!empty($params->ip)){
+			//根据plan_id获取streamname
+			//获取IP的信息
+			$ipinfo = utility_ip::info($params->ip);
+			//获取dispatch的信息
+			if(!empty($ipinfo->area_name)){
+				$dispatch = $db->getCdnDispatch($ipinfo->area_name,$ipinfo->op_name);
+				if(!empty($dispatch->items)){
+					$rand_id = array_rand($dispatch->items);
+					$rand_item = $dispatch->items[$rand_id];
+					$cdn_id = $rand_item['fk_cdn'];
+					$cdn = $db->getCDN($cdn_id);
+					$r->data['cdn_id']=$cdn_id;
+					$host= $cdn['host_name'];
+				}
+			}
+		}
+		if(empty($host)){
+			$cdns = $db->listCdn();
+			if(!empty($cdns->items)){
+				$rand_id = array_rand($cdns->items);
+				$rand_item = $cdns->items[$rand_id];
+				$r->data['cdn_id']=$rand_item['pk_cdn'];
+				$host= $rand_item['host_name'];
+			}else{
+				$r->data['cdn_id']=0;
+			}
+		}
+		$chat_cdn = $db->getChatCdnByPlanId($params->plan_id);
+		if(!empty($chat_cdn['host_name'])){
+			$r->data['host_chat']=$chat_cdn['host_name'];
+		}else{
+			$r->data['host_chat']=$host;
+		}
+		$chat_publish = $db->getChatPublishCdn();
+		if(!empty($chat_publish['host_name'])){
+			$r->data['host_chat_publish']=$chat_publish['host_name'];
+		}
+
+		$r->data['host']=$host;
+
+		return $r;
+	}
+	public function pageGetVodUrl($inPath){
+		$r = new stdclass;
+		$r->data=array();
+		$params=SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id) || empty($params->ip)){
+			return array("result"=>array("code"=>-1));
+		}
+		$db = new live_db;
+		$course_db = new course_db;
+		$plan_info = $course_db->getPlan($params->plan_id);
+		if(empty($plan_info)){
+			return array("result"=>array("code"=>-2,"msg"=>"plan_id error"));
+		}
+		$video_info = $course_db->getCourseVideoByInfo(0,$plan_info['course_id'],$plan_info['section_id'],$plan_info['class_id'],$plan_info['plan_id']);
+		$r->data['stream_name'] = $video_info['filename'];
+		$r->data['updatetime'] = $video_info['last_updated'];
+		$r->data['video_id'] = $video_info['video_id'];
+		$host="";
+		if(!empty($params->ip)){
+			//根据plan_id获取streamname
+			//获取IP的信息
+			$ipinfo = utility_ip::info($params->ip);
+			//获取dispatch的信息
+			if(!empty($ipinfo->area_name)){
+				$dispatch = $db->getCdnDispatch($ipinfo->area_name,$ipinfo->op_name);
+				if(!empty($dispatch->items)){
+					$rand_id = array_rand($dispatch->items);
+					$rand_item = $dispatch->items[$rand_id];
+					$cdn_id = $rand_item['fk_cdn'];
+					$cdn = $db->getCDN($cdn_id);
+					$r->data['cdn_id']=$cdn_id;
+					$host= $cdn['host_name'];
+				}
+			}
+		}
+		if(empty($host)){
+			$cdns = $db->listCdn();
+			if(!empty($cdns->items)){
+				$rand_id = array_rand($cdns->items);
+				$rand_item = $cdns->items[$rand_id];
+				$r->data['cdn_id']=$rand_item['pk_cdn'];
+				$host= $rand_item['host_name'];
+			}else{
+				$r->data['cdn_id']=0;
+			}
+		}
+		$r->data['host']=$host;
+		//如果没有获取cdn直接的点
+
+		return $r;
+	}
+}
+

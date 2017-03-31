@@ -1,0 +1,8 @@
+#直播加密key
+live{
+	key "c2d2b80a18a17f4854e8448049b05b92";
+}
+#友盟消息发送支持app列表
+ymeng{
+     842 "xiaowo";
+}

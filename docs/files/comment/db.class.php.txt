@@ -1,0 +1,132 @@
+<?php
+class comment_db{
+	var $_db;
+	var $_config;
+	public function __construct($dbname="db_message"){
+		$this->_db = new SDb;
+		$this->_db->useConfig($dbname,"main");
+	}
+
+	public function addComment($data){
+		$table = array("t_comment_course");
+		$ret = $this->_db->insert($table, $data);
+		if($ret){
+			return $ret;
+		}
+		$condition = "fk_user=$data->fk_user and fk_course=$data->fk_course";
+		$item = array("comment"=>$data->comment);
+		return $this->_db->update($table, $condition, $item);
+	}
+	public function addDetail($data){
+		$table = array("t_score_course_detail");
+		$ret = $this->_db->insert($table, $data);
+		if($ret){
+			return $ret;
+		}
+		$condition = "fk_user=$data->fk_user and fk_course=$data->fk_course";
+		$item = array("avg_score"=>$data->avg_score, "student_score"=>$data->student_score, "desc_score"=>$data->desc_score, "explain_score"=>$data->explain_score, "service_score"=>$data->service_score);
+		return $this->_db->update($table, $condition, $item);
+	}
+	public function addTotal($data){
+		$table = array("t_score_course_total");
+		$condition = "fk_course=$data->fk_course";
+		$item = array("total_user"=>$data->total_user, "avg_score"=>$data->avg_score, "student_score"=>$data->student_score, "desc_score"=>$data->desc_score, "explain_score"=>$data->explain_score, "service_score"=>$data->service_score);
+		$ret = $this->_db->update($table, $condition, $item);
+		if($ret){
+			return $ret;
+		}
+		return $this->_db->insert($table, $data);
+	}
+	public function getComment($userId, $courseId){
+		$item = new stdclass;
+		$item->comment_id = "pk_comment";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->comment = "comment";
+		$item->last = "last_updated";
+		$table = array("t_comment_course");
+		$condition = "fk_user=$userId and fk_course=$courseId";
+		return $this->_db->select($table, $condition, $item);
+	}
+	public function getCommentNum($courseId, $user){
+		$item = new stdclass;
+		$item->total = "count(1)";
+		$table = array("t_comment_course");
+		$condition = "fk_course=$courseId and fk_user!=$user";
+		return $this->_db->select($table, $condition, $item);
+	}
+	public function getComments($courseId, $start, $num, $user){
+		$item = new stdclass;
+		$item->comment_id = "pk_comment";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->comment = "comment";
+		$item->last = "last_updated";
+		$table = array("t_comment_course");
+		$condition = "fk_course=$courseId and pk_comment>=$start and fk_user!=$user";
+		$this->_db->setLimit($num);
+		$ret = $this->_db->select($table, $condition, $item, "", "pk_comment desc");
+		return $ret;
+	}
+	public function getCommentsDesc($courseId, $num, $max, $user){
+		$item = new stdclass;
+		$item->comment_id = "pk_comment";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->comment = "comment";
+		$item->last = "last_updated";
+		$table = array("t_comment_course");
+		if($max){
+			$condition = "fk_course=$courseId and pk_comment<$max and fk_user!=$user";
+		}else{
+			$condition = "fk_course=$courseId and fk_user!=$user";
+		}
+		$this->_db->setLimit($num);
+		$ret = $this->_db->select($table, $condition, $item, "", "pk_comment desc");
+		return $ret;
+	}
+	public function getDetail($userId, $courseId){
+		$item = new stdclass;
+		$item->detail_id = "pk_detail";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->avg_score = "avg_score";
+		$item->student_score = "student_score";
+		$item->desc_score = "desc_score";
+		$item->explain_score = "explain_score";
+		$item->service_score = "service_score";
+		$item->last_updated = "last_updated";
+		$table = array("t_score_course_detail");
+		$condition = "fk_user=$userId and fk_course=$courseId";
+		return $this->_db->select($table, $condition, $item);
+	}
+	public function getDetailTotal($courseId){
+		$item = new stdclass;
+		$item->total_user = "count(1)";
+		$item->avg_score = "sum(avg_score)";
+		$item->student_score = "sum(student_score)";
+		$item->desc_score = "sum(desc_score)";
+		$item->explain_score = "sum(explain_score)";
+		$item->service_score = "sum(service_score)";
+		$table = array("t_score_course_detail");
+		$condition = "fk_course=$courseId";
+		return $this->_db->select($table, $condition, $item);
+	}
+	public function getTotal($courseId){
+		$item = new stdclass;
+		$item->total_id = "pk_total";
+		$item->course_id = "fk_course";
+		$item->total_user = "total_user";
+		$item->avg_score = "avg_score";
+		$item->student_score = "student_score";
+		$item->desc_score = "desc_score";
+		$item->explain_score = "explain_score";
+		$item->service_score = "service_score";
+		$item->last_updated = "last_updated";
+		$table = array("t_score_course_total");
+		$condition = "fk_course=$courseId";
+		return $this->_db->select($table, $condition, $item);
+	}
+}
+?>
+

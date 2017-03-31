@@ -1,0 +1,131 @@
+<?php
+class course_section{
+	public function pageList($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$course_id = (int)$inPath[3];
+		$course_api = new course_api;
+		$sectionlist = $course_api->getSectionList($course_id);
+		if($sectionlist === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the section is not found!";
+			return $ret;
+		}else{
+			return $sectionlist;
+		}
+	}
+	public function pageGet($inPath){
+		$ret = new stdclass;
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			$ret->result =  new stdclass;
+			$ret->result->code = -1;
+			$ret->result->msg= "section id is not found!";
+			return $ret;
+		}
+		$course_db = new course_db;
+		$data = $course_db->getSection($inPath['3']);
+		if(!empty($data)){
+			$data['status']=course_status::name($data['status']);
+			$ret->data=$data;
+		}
+		return $ret;
+	}
+	public function pageUpdate($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$section_id = (int)$inPath[3];
+		$params = SJson::decode(utility_net::getPostData());
+		$section = array();
+		if(empty($params->name)){
+			$ret->result->code = -3;
+			$ret->result->msg = "the section name is empty!";
+			return $ret;			
+		}else{
+			$time = date("Y-m-d H:i:s");
+			$section["name"] = $params->name;
+			$section["descript"] = empty($params->descript)? '请输入章节描述':$params->descript;
+			$section["last_updated"] = $time;
+		//	$section["status"] = $params->status;
+			$section["status"] = empty($params->status)? '1':$params->status;
+		}
+		$course_api = new course_api;
+		$ret_section = $course_api->updatesection($section_id,$section);
+		if($ret_section === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pagecreate($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The cid is not found!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$cid = (int)$inPath[3];
+		//在这里强制转换了下
+		$params = SJson::decode(utility_net::getPostData(),true);
+		if(empty($params["name"])){
+			$ret->result->code = -3;
+			$ret->result->msg = "the name is empty!";
+			return $ret;	
+		}else{
+			$section = $params;
+		}
+		$course_api = new course_api;
+		$ret_course = $course_api->addsection($cid,$section);
+		if($ret_course === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail insert";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	/*
+	 *即使没有这个id也会删除 这个是sql的原因 应该再完善下
+ 	 *或者前端做AjAx判断
+	 */
+	public function pagedel($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The sid is not found!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		if (empty($inPath[4]) || !is_numeric($inPath[4])) {
+			return $ret;
+		}
+		$sid = (int)$inPath[3];
+		$cid = (int)$inPath[4];
+		//在这里强制转换了下
+		$course_api = new course_api;
+		$ret_section = $course_api->delSection($sid,$cid);
+		if($ret_section === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail del";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+}
+

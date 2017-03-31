@@ -1,0 +1,91 @@
+<?php
+class message_api{
+	public static function online($user_from_id, $user_from_token, $plan_id, $isOnline){
+		$params = new stdclass;
+		$params->user_from_id = $user_from_id;
+		$params->user_from_token = $user_from_token;
+		$params->plan_id = $plan_id;
+		$params->type = message_type::on_off_line;
+		if($isOnline){
+			$params->content = "online";
+		}else{
+			$params->content = "offline";
+		}
+		$message_http = new message_http;
+		$message_http->addSignal($params);
+		return 1;
+	}
+	public static function startCloseClass($plan_id, $user_id, $user_token, $isStart){
+		$params = new stdclass;
+		$params->plan_id = $plan_id;
+		$params->type = message_type::start_close;
+		if($isStart){
+			$params->content = "start";
+		}else{
+			$params->content = "close";
+		}
+		$params->user_from_id = 0;
+		$params->user_from_token = "";
+		$message_http = new message_http;
+		$message_http->addSignal($params);
+		message_api::setPattern($plan_id, "normal");
+		return 1;
+	}
+	public static function setPattern($plan_id, $pattern){
+		if("normal"!=$pattern && "reply"!=$pattern && "notalk"!=$pattern){
+			return false;
+		}
+		$params = new stdclass;
+		$params->plan_id = $plan_id;
+		$params->type = message_type::pattern;
+		$params->content = $pattern;
+		$params->user_from_id = 0;
+		$params->user_from_token = "";
+		$message_http = new message_http;
+		$message_http->addSignal($params);
+		$message_db = new message_db;
+		$data = new stdclass;
+		$data->fk_plan = $plan_id;
+		$data->text_pattern = $pattern;
+		$message_db->addSetting($data);
+		return true;
+	}
+	/*public static function classNum($plan_id, $num){
+		$params = new stdclass;
+		$params->plan_id = $plan_id;
+		$params->type = message_type::class_number;
+		$params->content = "$num";
+		$params->user_from_id = 0;
+		$params->user_from_token = "";
+		$message_http = new message_http;
+		$message_http->addSignal($params);
+		$message_db = new message_db;
+		$db_ret = $message_db->addSignal($params);
+		return $db_ret;
+	}*/
+	//目前给一个class_id的所有plan都发消息，以后可以优化
+	public static function modifyStudent($class_id, $user_id, $isAdd){
+		$course_db = new course_db;
+		$plans = $course_db->getPlansByClassId($class_id);
+		if(!$plans){
+			return;
+		}
+		$params = new stdclass;
+		//$params->plan_id = $plan_id;
+		$params->type = message_type::modify_student;
+		if($isAdd){
+			$params->content = "add";
+		}else{
+			$params->content = "delete";
+		}
+		$params->user_from_id = $user_id;
+		$params->user_from_token = "";
+		$message_http = new message_http;
+		foreach($plans as $plan){
+			$params->plan_id = $plan["plan_id"];
+			$wsg = $message_http->addSignal($params);
+		}
+	}
+}
+?>
+

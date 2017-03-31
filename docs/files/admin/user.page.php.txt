@@ -1,0 +1,26 @@
+<?php
+class admin_user{
+	/**
+	 * @todo 增加密码加密功能
+	 */
+	function pageVerify($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result=array("code"=>0,"msg"=>"x");
+		if(empty($params->name) || empty($params->password) || empty($params->login_ip)){
+			$ret->result['code']=-1;
+			return $ret;
+		}
+		$admin_db = new admin_db;
+		$user = $admin_db->getAdminUser($params->name);
+		/**
+		 * TODO
+		 */
+		if($user['password']!=$params->password){
+			$ret->result['code']=-1;
+			return $ret;
+		}
+		return $ret;
+	}
+}
+

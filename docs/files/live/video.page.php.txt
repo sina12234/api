@@ -1,0 +1,252 @@
+<?php
+class live_video{
+	/**
+	 * 校验提交的服务器权限，仅在配置文件里的才可以提交
+	 * */
+	public function __construct($inPath){
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","live");
+		if(empty($conf->allow)){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	private function error404(){
+		header("HTTP/1.0 404 Not Found");
+		exit;
+	}
+	/**
+	 * 显示API的说明
+	 * */
+	public function pageEntry($inPath){
+	}
+	/**
+	 * 播放权限
+	 * */
+	public function pagePlay($inPath){
+		//参数鉴定，主要是token和planid
+error_log(var_export($inPath,true),3,"/tmp/a.log");
+		if($_REQUEST['call']=="play" && !empty($_REQUEST['app'])){
+			if(empty($_REQUEST['token']) || empty($_REQUEST['planid'])){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+			$token_info = user_db::getToken($_REQUEST['token']);
+			if(empty($token_info['token'])){//Token is error
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+			//check plan 权限
+			//Auth鉴权 ,根据token获取用户ID,判断有没有播放权限(有没有购买)
+			//根据planid获取发布端publish的信息
+			//再根据app,stream_name等信息，再次鉴定
+			//鉴定成功，写在线表，然后播放
+			live_api::addPlayRtmp($token_info['fk_user']);
+			$db = new course_db;
+			$plan_info = $db->getPlan($_REQUEST['planid']);
+			if(!empty($plan_info)){
+
+				if($plan_info['live_public_type']==1){
+					//公开
+				}else{
+					//非公开，需要检验是否报名
+					if(empty($token_info['fk_user'])){
+						header("HTTP/1.0 404 Not Found");
+						exit;
+					}
+					if($plan_info['user_plan_id']==$token_info['fk_user'] || $plan_info['user_id']==$token_info['fk_user']){
+						//上课老师，或者机构，可以直接看
+					}else{
+						$baoming = $db->getRegistration($plan_info['course_id'],$token_info['fk_user']);
+						if(empty($baoming)){
+							//没有报名
+							header("HTTP/1.0 404 Not Found");
+							exit;
+						}
+					}
+				}
+				$db->addPlanUser(
+					$plan_info['course_id'],
+					$plan_info['class_id'],
+					$plan_info['plan_id'],
+					$token_info['fk_user'],
+					$_REQUEST['token']
+				);
+				//上线
+				//$msg_db = new message_db;
+				/*$msg = array(
+					"fk_user_from"=>$token_info['fk_user'],
+					"fk_user_to"=>0,
+					"fk_plan"=>$plan_info['plan_id'],
+					"type"=>message_type::online
+				);*/
+				/*$msg = new stdclass;
+				$msg->fk_user_from = $token_info['fk_user'];
+				$msg->fk_user_to = 0;
+				$msg->fk_plan = $plan_info['plan_id'];
+				$msg->type = message_type::online;
+				$msg_db->addMsg($msg);*/
+				//message_api::online($token_info['fk_user'], $token_info['token'], $plan_info['plan_id'], true);
+			}
+		}
+	}
+	/**
+	 * HLS播放
+	 * 更新t_live_play_hls播放情况
+	 * */
+	public function pageHlsConnect($inPath){
+		return $this->pagePlayHls($inPath);
+	}
+	public function pagePlayHls($inPath){
+		//Auth鉴权
+		//header("HTTP/1.0 404 Not Found");
+		if(empty($_SERVER['HTTP_X_ORIGINAL_URI'])){
+			//404
+		}
+		$url = $_SERVER['HTTP_X_ORIGINAL_URI'];
+		$parsed_url = parse_url($url);
+		if(basename($parsed_url['path'])=='index.m3u8'){
+			parse_str($parsed_url['query'],$params);
+			if(empty($params['token'])){
+				//404
+			}
+			$_REQUEST['token']=$params['token'];
+			return $this->pageConnect($inPath);
+		};
+	}
+	/**
+	 * 发布视频校验，一个用户同一时间只能发布一个视频
+	 * */
+	public function pagePublish($inPath){
+		//{{{验证token权限
+		if(empty($_REQUEST['token'])){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		$auth = live_api::getAuthByToken($_REQUEST['token']);
+		if(empty($auth['fk_user'])){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if($_REQUEST['app'] !=$auth['app_name'] || $_REQUEST['name']!=$auth['stream_name']){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		//}}}
+		//{{{判断是否正在发布
+		$db_r = live_api::getPublishByUserID($auth['fk_user']);
+		if(!empty($db_r['live_call']) && ($db_r['live_call']=="publish" || $db_r['live_call']=="update_publish")){
+			if(strtotime($db_r['last_updated']) > time()-40){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}
+		//}}}
+		$r = live_api::setPublish($auth['fk_user']);
+		if($r===false){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	/**
+	 * 结束播放
+	 * */
+	public function pagePlayDone($inPath){
+		if($_REQUEST['call']=="play_done" && !empty($_REQUEST['app'])){
+			if(empty($_REQUEST['token']) || empty($_REQUEST['planid'])){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+			$token_info = user_db::getToken($_REQUEST['token']);
+			if(empty($token_info['fk_user'])){
+				$token_info['fk_user'] = 0;
+			}
+			//Auth鉴权 ,根据token获取用户ID,判断有没有播放权限(有没有购买)
+			//根据planid获取发布端publish的信息
+			//再根据app,stream_name等信息，再次鉴定
+			//鉴定成功，写在线表，然后播放
+			$db = new course_db;
+			$db->delPlanUserByToken($_REQUEST['token']);
+			//下线
+			//$msg_db = new message_db;
+			/*$msg = array(
+				"fk_user_from"=>$token_info['fk_user'],
+				"fk_user_to"=>0,
+				"fk_plan"=>$_REQUEST['planid'],
+				"type"=>message_type::offline
+			);*/
+			/*$msg = new stdclass;
+			$msg->fk_user_from = $token_info['fk_user'];
+			$msg->fk_user_to = 0;
+			$msg->fk_plan = $_REQUEST['planid'];
+			$msg->type = message_type::offline;
+			$msg_db->addMsg($msg);*/
+			//message_api::online($token_info['fk_user'], $token_info['token'], $_REQUEST['planid'], false);
+		}
+	}
+	/**
+	 * 结束发布
+	 * */
+	public function pagePublishDone($inPath){
+		live_api::updatePublish();
+		//设置状态
+		if(empty($_REQUEST['token'])){
+			return ;
+		}
+		$auth = live_api::getAuthByToken($_REQUEST['token']);
+		if(empty($auth['fk_user'])){
+			return ;
+		}
+		//{{{
+		$publish = live_api::getPublishByUserID($auth['fk_user']);
+		if(!empty($publish['plan_id'])){
+			$update_r = course_api::setPlanStatus($publish['plan_id'],course_status::finished);
+			//上课结束
+			/*$msg_db = new message_db;
+			$msg = array(
+				"fk_user_from"=>$auth['fk_user'],
+				"fk_user_to"=>0,
+				"fk_plan"=>$publish['plan_id'],
+				"type"=>message_type::close
+			);*/
+			/*$msg = new stdclass;
+			$msg->fk_user_from = $auth['fk_user'];
+			$msg->fk_user_to = 0;
+			$msg->fk_plan = $publish['plan_id'];
+			$msg->type = message_type::close;
+			$r = $msg_db->addMsg($msg);*/
+			message_api::startCloseClass($publish['plan_id'], $publish["uid"], $publish["user_token"], false);
+		}
+		//}}}
+	}
+	/**
+	 * 结束录制
+	 * */
+	public function pageRecordDone($inPath){
+		//header("HTTP/1.0 404 Not Found");
+	}
+	/**
+	 * 心跳数据
+	 * */
+	public function pagePublishUpdate($inPath){
+		if($_REQUEST['call']=="update_publish"){
+			live_api::updatePublish();
+			error_log(var_export($_REQUEST,true),3,"/tmp/live.update.play.log");
+		}
+	}
+	public function pagePlayUpdate($inPath){
+		if($_REQUEST['call']=="update_play" && !empty($_REQUEST['app'])){
+			live_api::addPlayRtmp($uid=1);
+			error_log(var_export($_REQUEST,true),3,"/tmp/live.update.play.log");
+		}
+	}
+}
+

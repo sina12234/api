@@ -1,0 +1,251 @@
+<?php
+class live_db{
+	public static function InitDB($dbname="db_live",$dbtype="main"){
+		redis_api::useConfig($dbname);
+		$db = new SDb;
+		$db->useConfig($dbname,$dbtype);
+		return $db;
+	}
+	/**
+	  * 根据token获取auth记录权限
+	  **/
+	public function getAuthByToken($token){
+		$db = self::InitDB("db_live","query");
+		$condition = array("pub_token"=>$token);
+		return $ConnectID=$db->selectOne("t_live_publish_auth",$condition);
+	}
+	/**
+	  * 根据uid获取auth记录权限
+	  **/
+	public function getAuthByUid($uid){
+		$condition = array("fk_user"=>$uid);
+		$db = self::InitDB("db_live","query");
+		return $ConnectID=$db->selectOne("t_live_publish_auth",$condition);
+	}
+	public function delChatAuth($token){
+		$db = self::InitDB("db_live");
+		$condi = array('pub_token' => $token);
+		return $db->delete("t_live_chat_auth",$condi);
+	}
+	public function setChatAuth($Auth){
+		$db = self::InitDB("db_live");
+		return $db->insert("t_live_chat_auth",$Auth,true);
+	}
+	public function getChatAuth($token){
+		$condi = array('pub_token' => $token);
+		$db = self::InitDB("db_live","query");
+		return $db->selectOne("t_live_chat_auth",$condi);
+	}
+	public function getChatAuthByUserId($uid){
+		$condi = array('fk_user' => $uid);
+		$db = self::InitDB("db_live","query");
+		return $db->selectOne("t_live_chat_auth",$condi);
+	}
+	/**
+	  *
+	  */
+	public function setPublishAuth($uid,$Auth){
+		$Auth['fk_user']=$uid;
+		$db = self::InitDB("db_live");
+		return $db->insert("t_live_publish_auth",$Auth,true);
+	}
+	public function getPublishByUserID($uid){
+		$db = self::InitDB("db_live","query");
+		$item = new stdclass;
+		$item->uid = "fk_user";
+		$item->user_token= "user_token";
+		$item->user_ip= "user_ip";
+		$item->plan_id= "fk_plan";
+		$item->stream_name= "stream_name";
+		$item->server_ip= "server_ip";
+		$item->client_id= "client_id";
+		$item->record_plan_id= "record_fk_plan";
+		$item->user_ip= "user_ip";
+		$item->app_name= "app_name";
+		$item->live_call= "live_call";
+		$condition = array("fk_user"=>$uid);
+		return $ConnectID=$db->selectOne("t_live_publish",$condition,$item);
+	}
+	public function getPublishByPlanID($plan_id){
+		$db = self::InitDB("db_live","query");
+		$item = new stdclass;
+		$item->uid = "fk_user";
+		$item->user_ip= "user_ip";
+		$item->plan_id= "fk_plan";
+		$item->record_plan_id= "record_fk_plan";
+		$item->stream_name= "stream_name";
+		$item->server_ip= "server_ip";
+		$item->client_id= "client_id";
+		$item->user_ip= "user_ip";
+		$item->app_name= "app_name";
+		$item->live_call= "live_call";
+		$condition = array("fk_plan"=>$plan_id);
+		return $ConnectID=$db->selectOne("t_live_publish",$condition,$item);
+	}
+	public function addPlayRtmp($Play){
+		return true;
+		//$db = self::InitDB("db_live");
+		//return $db->insert("t_live_play_rtmp",$Play,true);
+	}
+	public function setPublish($uid,$Publish){
+		$db = self::InitDB("db_live");
+		$Publish['fk_user']=$uid;
+		$r = $db->insert("t_live_publish",$Publish);
+		if(!$r){
+			$r = self::updatePublishByUid($uid,$Publish);
+		}
+		return $r;
+	}
+	public function updatePublishPlan($Publish,$token,$plan_id,$record_plan_id){
+		$update=array();
+		$update['user_token']=$token;
+		$update['fk_plan']=$plan_id;
+		if($record_plan_id){
+			$update['record_fk_plan']=$record_plan_id;
+		}
+		$db = self::InitDB("db_live");
+		return $db->update("t_live_publish",array(
+			"server_ip"=>$Publish['server_ip'],
+			"client_id"=>$Publish['client_id'],
+			),$update
+			);
+	}
+	public function updatePublish($Publish){
+		$db = self::InitDB("db_live");
+		return $db->update("t_live_publish",array(
+			"server_ip"=>$Publish['server_ip'],
+			"client_id"=>$Publish['client_id'],
+			),array(
+			"live_call"=>$Publish['live_call'],
+			"last_updated"=>date("Y-m-d H:i:s")
+			)
+			);
+	}
+	public function updatePublishByUid($uid,$Publish){
+		$db = self::InitDB("db_live");
+		return $db->update("t_live_publish",array(
+			"fk_user"=>$uid,
+			),$Publish);
+	}
+	/**
+	  *
+	  */
+	public function getCdnDispatch($area_name,$op_name){
+		$db = self::InitDB("db_live","query");
+		$condition = array("area_name"=>$area_name,"op_name"=>$op_name,"status"=>1);
+		$key =md5( "live_db.t_live_video_cdn_dispatch.$area_name.$op_name");
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+		$v = $db->select("t_live_video_cdn_dispatch",$condition);
+		if(!$v)$v=0;
+		redis_api::set($key,$v,300);
+		return $v;
+	}
+	public function getChatCdnByPlanId($plan_id=0){
+		$db = self::InitDB("db_live","query");
+		return $db->selectOne("t_live_chat_cdn",$condition=array("status"=>1));
+	}
+	public function getCdn($cdn_id){
+		$cdns = self::listCdn();
+		if($cdns){
+			foreach($cdns->items as $cdn){
+				if($cdn['pk_cdn']==$cdn_id){
+					return $cdn;
+				}
+			}
+		}
+		return false;
+	}
+	public function listCdn(){
+		$db = self::InitDB("db_live","query");
+		$key =md5( "live_db.t_live_video_cdn");
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+		$condition = array("status"=>1);
+		$v = $db->select("t_live_video_cdn",$condition);
+		if(!$v)$v=0;
+		redis_api::set($key,$v,300);
+		return $v;
+	}
+	public function getVideoPublishCdn(){
+		$condition = array("status"=>1,"publish_type"=>"video");
+		$db = self::InitDB("db_live","query");
+		return $db->selectOne("t_live_publish_cdn",$condition);
+	}
+	public function listVideoPublishCdn(){
+		$db = self::InitDB("db_live","query");
+		$condition = array("status"=>1,"publish_type"=>"video");
+		return $db->select("t_live_publish_cdn",$condition);
+	}
+	public function getChatPublishCdn(){
+		$db = self::InitDB("db_live","query");
+		$condition = array("status"=>1,"publish_type"=>"chat");
+		return $db->selectOne("t_live_publish_cdn",$condition);
+	}
+	public function listChatPublishCdn(){
+		$db = self::InitDB("db_live","query");
+		$condition = array("status"=>1,"publish_type"=>"chat");
+		return $db->select("t_live_publish_cdn",$condition);
+	}
+	public function addRecordFile($File){
+		$db = self::InitDB("db_live");
+		return $db->insert("t_live_record_file",$File);
+	}
+	public function listRecordFile($uid,$plan_id){
+		$db = self::InitDB("db_live","query");
+		$item=array("user_id"=>"fk_user","file_id"=>"pk_file","plan_id"=>"fk_plan","filename","filesize","duration","bitrate","video_width","video_height","video_framerate","last_updated");
+		return $db->select("t_live_record_file",array("fk_user"=>$uid,"fk_plan"=>$plan_id,"status"=>0),$item);
+	}
+	public function delRecordFile($uid,$plan_id){
+		$db = self::InitDB("db_live");
+		$condi=array("fk_user"=>$uid,"fk_plan"=>$plan_id);
+		return $db->update("t_live_record_file",$condi,array("status"=>-1));
+	}
+	public function addUploadFile($File){
+		$db = self::InitDB("db_live");
+		return $db->insert("t_live_upload_file",$File);
+	}
+	public function setUploadFile($file_id,$File){
+		$db = self::InitDB("db_live");
+		return $db->update("t_live_upload_file",array("pk_file"=>$file_id),$File);
+	}
+	public function getUploadFile($file_id){
+		$db = self::InitDB("db_live","query");
+		$item=array("user_id"=>"fk_user","file_id"=>"pk_file","plan_id"=>"fk_plan","filename","filename_org","filesize","duration","bitrate","video_width","video_height","video_framerate","last_updated","encoding_status");
+		return $db->selectOne("t_live_upload_file",array("pk_file"=>$file_id),$item);
+	}
+	public function listUploadFile($uid,$plan_id){
+		$db = self::InitDB("db_live","query");
+		$condi['fk_user']=$uid;
+		$condi['fk_plan']=$plan_id;
+		$condi['status']=0;
+		$item=array("user_id"=>"fk_user","file_id"=>"pk_file","plan_id"=>"fk_plan","filename","filename_org","filesize","duration","bitrate","video_width","video_height","video_framerate","last_updated","status","encoding_status");
+		return $db->select("t_live_upload_file",$condi,$item);
+	}
+	public function addUploadTask($task){
+		$db = self::InitDB("db_live");
+		return $db->insert("t_live_encoding_task",$task);
+	}
+	public function setUploadTask($task_id,$task){
+		$db = self::InitDB("db_live");
+		return $db->update("t_live_encoding_task",array("pk_task"=>$task_id),$task);
+	}
+	public function getUploadTask($task_id){
+		$db = self::InitDB("db_live","query");
+		$item=array("task_id"=>"pk_task","user_id"=>"fk_user","plan_id"=>"fk_plan","task_type","status");
+		return $db->selectOne("t_live_encoding_task",array("pk_task"=>$task_id),$item);
+	}
+	public function getUploadTaskByUidPid($user_id,$plan_id){
+		$item=array("task_id"=>"pk_task","user_id"=>"fk_user","plan_id"=>"fk_plan","task_type","status");
+		$db = self::InitDB("db_live","query");
+		return $db->selectOne("t_live_encoding_task",array("fk_user"=>$user_id,"fk_plan"=>$plan_id),$item);
+	}
+	public function listUploadTask($limit = 1){
+		$db = self::InitDB("db_live","query");
+		$condi['status']=0;
+		$db->setLimit($limit);
+		$item=array("task_id"=>"pk_task","user_id"=>"fk_user","plan_id"=>"fk_plan","task_type","status");
+		return $db->select("t_live_encoding_task",$condi,$item);
+	}
+}
+

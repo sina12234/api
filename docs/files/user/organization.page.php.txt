@@ -1,0 +1,506 @@
+<?php
+class user_organization{
+	public function pageOrglist($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$uid = $inPath[3];
+		//page 页数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$page = 1;}else{$page = $inPath[4];}
+		//length 每页显示数
+		if(empty($inPath[5])||!is_numeric($inPath[5])){$length = 4;}else{$length = $inPath[5];}
+		
+		$user_api = new user_api;
+		//$courselist = $course_api->getpfcourselist($page,$length,$fee);
+		$listorg= $user_api->listorg($uid,$page,$length);
+		if($listorg === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		$listorg1 = SJson::decode($listorg);
+		//	return $courselist1->data[0];
+		return $listorg1;
+	}
+	public function pageGet($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$oid = $inPath[3];
+		$user_api = new user_api;
+		$listorg = $user_api->getorg($oid);
+		if($listorg === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $listorg;
+	}
+	public function pageGetByUid($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$uid = $inPath[3];
+		$user_api = new user_api;
+		$listorg = $user_api->getOrgByUid($uid);
+		if($listorg === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $listorg;
+	}
+	public function pageGetOrgAbout($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$uid = $inPath[3];
+		$user_api = new user_api;
+		$db_ret = $user_api->getOrgAbout($uid);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $db_ret;
+	}
+	public function pagegetOrgByOwner($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$uid = $inPath[3];
+		$user_api = new user_api;
+		$orgInfo = $user_api->getOrgByOwner($uid);
+		if($orgInfo === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $orgInfo;
+	}
+	public function pageGetByTeacher($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$uid = $inPath[3];
+	//	$user_db= new user_db;
+		$listorg = user_db::getOrgByTeacher($uid);
+		if($listorg === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return array("code"=>0,"data"=>$listorg);
+	}
+	public function pageSet($inPath){
+
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "update inpath is empty!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+
+		$uid = (int)$inPath[3];
+		$params = SJson::decode(utility_net::getPostData(),true);
+		//		define("DEBUG",true);
+		$data = array();
+		if(empty($params["name"])){
+			$ret->result->code = -3;
+			$ret->result->msg = "the title is empty!";
+			return $ret;			
+		}else{
+			$data = $params;
+		}
+		$user_api = new user_api;
+		$user_api->updateorg($uid,$data);
+ error_log("organization 的data".var_export($data,true)."\n", 3, "/tmp/fanfan.log_");
+		if($user_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pagesetOrgProfile($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -2;
+		    $ret->result->msg= "update inpath is empty!";
+			return $ret;
+		}
+		$params = SJson::decode(utility_net::getPostData(),true);
+		$data = array();
+		if(empty($params['company'])){
+			$ret->result->code = -3;
+			$ret->result->msg = "the company is empty!";
+			return $ret;			
+		}else{
+			$data = $params;
+		}
+		$user_api = new user_api;
+		$db_ret=$user_api->updateOrgProfile((int)$inPath[3],$data);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageaddOrgSlide($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -2;
+		    $ret->result->msg= "inpath is empty!";
+			return $ret;
+		}
+		$params = SJson::decode(utility_net::getPostData());
+        $data=array();
+        $data['fk_user']=$inPath[3]; 
+        $data['slide_url']=$params->slide_url; 
+        $data['slide_link']=$params->slide_link; 
+		$user_api = new user_api;
+		$db_ret=$user_api->addOrgSlide($data);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail insert";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageupdateOrgSlide($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -2;
+		    $ret->result->msg= "update inpath is empty!";
+			return $ret;
+		}
+		$params = SJson::decode(utility_net::getPostData(),true);
+		$user_api = new user_api;
+		$db_ret=$user_api->updateOrgSlide((int)$inPath[3],$params);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pagedelOrgSlide($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -2;
+		    $ret->result->msg= "update inpath is empty!";
+			return $ret;
+		}
+		$user_api = new user_api;
+		$db_ret=$user_api->delOrgSlide((int)$inPath[3]);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "failed";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageupdateOrgLogo($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -2;
+		    $ret->result->msg= "update inpath is empty!";
+			return $ret;
+		}
+		$params = SJson::decode(utility_net::getPostData(),true);
+		$user_api = new user_api;
+		$db_ret=$user_api->updateOrgLogo((int)$inPath[3],$params);
+		if($db_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pagegetOrgSlidelist($inPath){
+		$ret = new stdclass;
+		$uid = empty($inPath[3])?0:$inPath[3];
+		//page 页数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$page = 1;}else{$page = $inPath[4];}
+		//length 每页显示数
+		if(empty($inPath[5])||!is_numeric($inPath[5])){$length = 4;}else{$length = $inPath[5];}
+		$user_api = new user_api;
+		$listorg= $user_api->getOrgSlideList($uid,$page,$length);
+		if($listorg === false){
+			$ret->result =  new stdclass;
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		$ret->data=$listorg->items;
+		return $ret;
+	}
+	public function pagegetOrgSlide($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$user_api = new user_api;
+		$orgInfo = $user_api->getOrgSlide((int)$inPath[3]);
+		if($orgInfo === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $orgInfo;
+	}
+	public function pageSetLOGO($inPath){ 
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "update inpath is empty!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+
+		$uid = (int)$inPath[3];
+		$params = SJson::decode(utility_net::getPostData(),true);
+		//		define("DEBUG",true);
+		$data = array();
+		$data = $params;
+		$user_api = new user_api;
+		$user_api->updateorg($uid,$data);
+ error_log("organization 的data".var_export($data,true)."\n", 3, "/tmp/fanfan.log_");
+		if($user_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pagegetOrgLogo($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+        if(empty($inPath[3])){
+		    $ret->result->code = -2;
+	    	$ret->result->msg= "error!";
+            return $ret;
+        }
+		$user_api = new user_api;
+		$orgInfo = $user_api->getOrgByOwner((int)$inPath[3]);
+		if($orgInfo === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $orgInfo;
+	}
+	/**
+	 * 机构用户列表
+	 */	
+	public function pageUserlist($inPath){
+		$ret = new stdclass;
+		$oid = empty($inPath[3])?0:$inPath[3];
+		//page 页数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$page = 1;}else{$page = $inPath[4];}
+		//length 每页显示数
+		if(empty($inPath[5])||!is_numeric($inPath[5])){$length = 4;}else{$length = $inPath[5];}
+		
+		$user_api = new user_api;
+		$all=0;
+		$star=0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(!empty($params->all)){
+			$all=1;
+		}
+		if(!empty($params->is_star)){
+			$star=1;
+		}
+		$listorg= $user_api->listOrgUser($oid,$all,$star,$page,$length);
+		if($listorg === false){
+			$ret->result =  new stdclass;
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		$ret->data=$listorg->items;
+		return $ret;
+	}
+	public function pagegetOrgUserinfo($inPath){
+		$ret = new stdclass;
+		$oid = empty($inPath[3])?0:$inPath[3];
+		//page 页数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$page = 1;}else{$page = $inPath[4];}
+		//length 每页显示数
+		if(empty($inPath[5])||!is_numeric($inPath[5])){$length = 4;}else{$length = $inPath[5];}
+		
+		$user_api = new user_api;
+		$all=0;
+		$params = SJson::decode(utility_net::getPostData());
+		$uid = $params->uid;
+		if(!empty($params->all)){
+			$all=1;
+		}
+		$listorg= $user_api->getOrgUserinfo($oid,$uid,$page,$length);
+		if($listorg === false){
+			$ret->result =  new stdclass;
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		$ret->data=$listorg;
+		return $ret;
+	}
+	public function pageUserDel($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if(empty($inPath[3]) || empty($inPath[4])){
+			$ret->result->code=-1;
+			return $ret;
+		}
+		$oid = $inPath[3];
+		$uid = $inPath[4];
+		$data = array();
+		//首先删除
+		$org = user_db::delOrgUser($oid,$uid);
+
+		$retUser = user_db::listOrgUserByUid($uid);
+		//该用户在别的机构下是否是老师
+		if(!empty($retUser->items)){
+			$countOrgUser = count($retUser->items);
+		}else{
+			$countOrgUser = 0;
+		}
+		//如果不是老师就把该用户老师权限去掉
+		if(0==$countOrgUser){
+			$userData = user_db::getUser($uid);
+			$type = $userData["type"]-2;
+			$data["type"] = $type;
+			user_db::updateUser($uid,$data);
+		}
+		if($org==false){
+			$ret->result->code=-3;
+			return $ret;
+		}
+		$ret->result->code=0;
+		return $ret;
+	}
+	/**
+	 * 机构用户设置
+	 */	
+	public function pageUserSet($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if(empty($inPath[3]) || empty($inPath[4])){
+			$ret->result->code=-1;
+			return $ret;
+		}
+		$data = array();
+		$oid = $inPath[3];
+		//获取机构信息
+		$user_db = new user_db;
+		$org = $user_db->getOrg($oid);
+		if($org==false){
+			$ret->result->code=-3;
+			return $ret;
+		}
+		$user_id = $inPath[4];
+		$params = SJson::decode(utility_net::getPostData());
+		$data["sort"] = $params->sort;
+		$data["is_star"] = empty($params->is_star)?0:1;
+		$sort = empty($inPath[5])?0:$inPath[5];
+		$listorg= $user_db->setOrgUser($oid,$user_id,$data);
+		if($listorg === false){
+			$ret->result->code = -2;
+			return $ret;
+		}else{
+			$ret->result->code = 0;
+		}
+		return $ret;
+	}
+	/**
+	 * 机构用户排序设置
+	 */	
+	public function pageUserSetSort($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if(empty($inPath[3]) || empty($inPath[4])){
+			$ret->result->code=-1;
+			return $ret;
+		}
+	 
+		//$oid = 104;
+		//$user_id = 153;
+		$oid = $inPath[3];
+		$user_id = $inPath[4];
+		$sort = empty($inPath[5])?1:$inPath[5];
+		$org = user_db::getOrg($oid);
+		if($org==false){
+			$ret->result->code=-3;
+			return $ret;
+		}
+		$user_api = new user_api();
+		$updateRet = $user_api->usersetsort($oid,$user_id,$sort);
+		if($updateRet === false){
+			$ret->result->code = -2;
+			return $ret;
+		}else{
+			$ret->result->code = 0;
+		}
+		return $ret;
+	}
+	public function pageGetUserIdBySubDomain($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "subdomain is empty!";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->subdomain)){
+			return $ret;
+		}
+		$user_api = new user_api;
+		$subdomain = $params->subdomain;
+		$SubUserid = $user_api->getUserIdBySubDomain($subdomain);
+		if($SubUserid === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the Userid is not found!";
+			return $ret;
+		}
+		return array("code"=>0,"data"=>$SubUserid);
+	}
+}
+

@@ -1,0 +1,105 @@
+<?php
+class user_auth{
+
+	function pageVerify($inPath){
+		$ret = new stdclass;
+		$ret->result=array("code"=>0,"msg"=>"");
+		$params=SJson::decode(utility_net::getPostData());
+		if((empty($params->uid) && empty($params->uname)) || empty($params->password) || empty($params->login_ip)){
+			$ret->result['code']=-1;
+			return $ret;
+		}
+		$user_db = new user_db;
+		if(!empty($params->uid)){
+			$user_id = $params->uid;
+		}else{
+			$user_id=0;;
+			if(utility_valid::mobile($params->uname)){
+				//手机号登录
+				$user_id=$user_db->getUserIDByMobile($params->uname);
+
+				$retgetUser = user_db::getUser($user_id);
+				if($retgetUser["verify_status"]==0){
+					$dataUp = array("verify_status"=>1,);
+					$retUpdateuser = user_db::updateUser($user_id,$dataUp);
+				}
+			}elseif(utility_valid::email($params->uname,false)){
+				//邮箱登录
+				$user_id=$user_db->getUserIDByEmail($params->uname);
+
+				$retgetUser = user_db::getUser($user_id);
+				if($retgetUser["verify_status"]==0){
+					$dataUp = array("verify_status"=>1,);
+					$retUpdateuser = user_db::updateUser($user_id,$dataUp);
+				}
+			}else{
+				$ret->result['code']=-1;
+				$ret->result['msg']="手机号或者邮箱地址不正确";
+				return $ret;
+			}
+			if(empty($user_id)){
+				$ret->result['code']=-3;
+				$ret->result['msg']="用户不存在!";
+				return $ret;
+			}
+		}
+		$user = $user_db->getUser($user_id);
+		if(empty($user)){
+			$ret->result['code']=-3;
+			$ret->result['msg']="用户不存在!";
+			return $ret;
+		}
+		if($user['password']!=user_api::encryptPassword($params->password)){
+			$ret->result['code']=-2;
+			$ret->result['msg']="密码不正确";
+			return $ret;
+		}
+		$ret->data=array("uid"=>$user_id,"name"=>$user['name']);
+		return $ret;
+	}
+	function pageCheck($inPath){
+		$ret = new stdclass;
+		$ret->result=array("code"=>0,"msg"=>"");
+		$params=SJson::decode(utility_net::getPostData());
+		if(empty($params->uname) && empty($params->parterner)){
+			$ret->result['code']=-1;
+			return $ret;
+		}
+		$user_db = new user_db;
+		$user_id=0;
+		if(!empty($params->uname)){
+			if(utility_valid::mobile($params->uname)){
+				//手机号登录
+				$user_id=$user_db->getUserIDByMobile($params->uname);
+
+				$retgetUser = user_db::getUser($user_id);
+				if($retgetUser["verify_status"]==0){
+					$dataUp = array("verify_status"=>1,);
+					$retUpdateuser = user_db::updateUser($user_id,$dataUp);
+				}
+			}elseif(utility_valid::email($params->uname,false)){
+				//邮箱登录
+				$user_id=$user_db->getUserIDByEmail($params->uname);
+
+				$retgetUser = user_db::getUser($user_id);
+				if($retgetUser["verify_status"]==0){
+					$dataUp = array("verify_status"=>1,);
+					$retUpdateuser = user_db::updateUser($user_id,$dataUp);
+				}
+			}else{
+				$ret->result['code']=-1;
+				$ret->result['msg']="手机号或者邮箱地址不正确";
+				return $ret;
+			}
+		}
+		if(empty($user_id)){
+			$ret->result['code']=-3;
+			$ret->result['msg']="用户不存在!";
+			return $ret;
+		}
+		$user = $user_db->getUser($user_id);
+		$ret->data=array("uid"=>$user_id,"name"=>$user['name']);
+		return $ret;
+	}
+}
+

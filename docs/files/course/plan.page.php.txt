@@ -1,0 +1,308 @@
+<?php
+class course_plan{
+	public function pageGet($inPath){
+		$ret = new stdclass;
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			$ret->result=new stdclass;
+			$ret->result->code = -1;
+			$ret->result->msg= "plan_id is not set!";
+			return $ret;
+		}
+		$plan_id= $inPath[3];
+		$db = new course_db;
+		$ret->data = $db->getPlan($plan_id);
+		if(!empty($ret->data)){
+			$ret->data['status']=course_status::name($ret->data['status']);
+		}
+		return $ret;
+	}
+
+	public function pageGetuni($inPath){
+		$ret = new stdclass;
+		$ret->result=new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "not found!";
+		$params = SJson::decode(utility_net::getPostData());
+		$course_id= empty($params->course_id)? "":$params->course_id;
+		$section_id = empty($params->section_id)? "":$params->section_id;
+		$class_id = empty($params->class_id)? "":$params->class_id;
+		if($section_id && $class_id && $course_id){
+			$db = new course_db;
+			$ret->data = $db->getPlanuni($course_id,$section_id,$class_id);
+			if(!empty($ret->data)){
+				$ret->data['status']=course_status::name($ret->data['status']);
+			}
+			$ret->result->code = 0;
+			$ret->result->msg = "SUCCESS！";
+		}else{
+			return $ret;
+		}
+		return $ret;
+	}
+
+	public function pagelist($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		if (empty($inPath[4]) || !is_numeric($inPath[4])) {
+			return $ret;
+		}
+
+		$params = SJson::decode(utility_net::getPostData());
+		$cid = empty($params->cid)? "":$params->cid;
+		$orgUserId = empty($params->orgUserId)? "":$params->orgUserId;
+		$plan_id= empty($params->plan_id)? "":$params->plan_id;
+		$class_id = empty($params->class_id)? "":$params->class_id;
+		$user_plan_id = empty($params->user_plan_id)? "":$params->user_plan_id;
+		$sid = empty($params->sid)? "":$params->sid;
+		$order_by = empty($params->order_by)? "desc":$params->order_by;
+		if(empty($params->week)){
+			$week = false;
+		}else{
+			$week = $params->week;
+		}
+		//page 页数
+		if(empty($inPath[3])||!is_numeric($inPath[3])){$page = 1;}else{$page = $inPath[3];}
+		//length 每页显示数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$length = 15;}else{$length = $inPath[4];}
+		$allcourse=false;
+		if(!empty($params->allcourse)){
+			$allcourse= true;
+		}
+		$course_api = new course_api;
+		$listplan= $course_api->getlistplan($cid,$orgUserId,$class_id,$user_plan_id,$sid,$plan_id,$week,$allcourse,$order_by,$page,$length);
+		if($listplan === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $listplan;
+	}
+	public function pageplanCourseGroup($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+
+		$params = SJson::decode(utility_net::getPostData());
+/*		if(empty($params->user_plan_id)){
+			return $ret;
+		}	
+	*/
+		$user_plan_id = empty($params->user_plan_id)? "":$params->user_plan_id;
+		$order_by = empty($params->order_by)? "desc":$params->order_by;
+		//page 页数
+		if(empty($inPath[3])||!is_numeric($inPath[3])){$page = 1;}else{$page = $inPath[3];}
+		//length 每页显示数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$length = 15;}else{$length = $inPath[4];}
+
+		$course_api = new course_api;
+		$listplan= $course_api->planCourseGroup($user_plan_id,$order_by,$page,$length);
+		if($listplan === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $listplan;
+	}
+	public function pageUpdate($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The id is not found!";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->class_id)){
+			$ret->result->code = -3;
+			$ret->result->msg = "the class is empty!";
+			return $ret;			
+		}else{
+			$time = date("Y-m-d H:i:s");
+			$plan["fk_user"] = $params->user_id;
+			$plan["fk_user_plan"] = $params->user_plan_id;
+		//	$plan["status"] = $params->status;
+			$plan["start_time"] = empty($params->start_time)? $time:$params->start_time;
+			$plan["end_time"] = empty($params->end_time)? $time:$params->end_time;
+			$plan["live_public_type"] = empty($params->live_public_type)? 0 :$params->live_public_type;
+			$plan["video_public_type"] = empty($params->video_public_type)? 0:$params->video_public_type;
+			$plan["video_trial_time"] = empty($params->video_trial_time)? 0:$params->video_trial_time;
+			$plan["last_updated"] = $time;
+			$cid = $params->course_id;
+			$sid = $params->section_id;
+			$class_id = $params->class_id;
+
+		}
+		$course_api = new course_api;
+		$course_api->updateplan($cid,$sid,$class_id,$plan);
+		if($course_api === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail update";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+			//TODO更新课程状态
+			$course_api = new course_api;
+			$course_api->update($cid,array("status"=>1));
+		}
+		return $ret;
+	}
+	public function pageinsert($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "The courseid is not found!";
+		if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return $ret;
+		}
+		$course_id = $inPath[3];
+
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params)){
+			$ret->result->code = -3;
+			$ret->result->msg = "the data is empty!";
+			return $ret;	
+		}else{
+			$plan["user_id"] = $params->user_id;
+			$plan["user_plan_id"] = $params->user_plan_id;
+			$plan["course_id"] = $course_id;
+			$plan["section_id"] = $params->section_id;
+			$plan["class_id"] = $params->class_id;
+			$plan["live_public_type"] = empty($params->live_public_type)? 0 :$params->live_public_type;
+			$plan["video_public_type"] = empty($params->video_public_type)? 0:$params->video_public_type;
+			$plan["video_trial_time"] = empty($params->video_trial_time)? 0:$params->video_trial_time;
+			$plan["status"] = empty($params->status)? "1":$params->status;
+			$plan["start_time"] = $params->start_time;
+		}
+		$course_api = new course_api;
+		$retCourseApi = $course_api->addplan($plan);
+		if($retCourseApi === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "fail insert";
+		}else{
+			$ret->result->code = 0;
+			//TODO更新课程状态
+			$course_api->update($course_id,array("status"=>1));
+			//如果课程不是公开课，更新人数
+			$ret->result->msg ="success";
+		}
+		return $ret;
+	}
+	public function pageSetStatus($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($inPath[3]) || empty($params->status)){
+			$ret->result->code = -1;
+			$ret->result->msg = "params error!";
+			return $ret;			
+		}
+		$update_r = course_api::setPlanStatus($inPath[3],$params->status);
+		if($update_r){
+			$ret->result->code = 0;
+			$ret->result->msg ="success";
+		}else{
+			$ret->result->code = -2;
+			$ret->result->msg ="update fail";
+		}
+		return $ret;
+	}
+	public function pageGetStatus($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if(empty($inPath[3])){
+			$ret->result->code = -1;
+			$ret->result->msg = "params error!";
+			return $ret;			
+		}
+		$plan_id = $inPath[3];
+		$db = new course_db;
+		$plan_info = $db->getPlan($plan_id);
+		if(empty($plan_info)){
+			$ret->result->code = -1;
+			$ret->result->msg = "not found plan info";
+			return $ret;			
+		}
+		$section_info = $db->getSection($plan_info['section_id']);
+		$course_info = $db->getCourse($plan_info['course_id']);
+		$ret->data=new stdclass;
+		$ret->data->plan_status= course_status::name($plan_info['status']);
+		$ret->data->section_status= course_status::name($section_status['status']);
+		$ret->data->course_status= course_status::name($course_status['status']);
+		return $ret;
+	}
+	public function pageGetUnstartPlan($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->hours)){
+			return $ret;
+		}
+		$course_db = new course_db;
+		$data = $course_db->getUnstartPlan($params->hours);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->data = $data->items;
+		return $ret;
+	}
+	public function pageGetRemindInfo($inPath){
+		$ret = new stdclass;
+		$ret->result = new stdclass;
+		$ret->result->code=-1;
+		$ret->result->msg="";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->plan_id) || empty($params->minutes)){
+			$ret->result->msg="缺少参数";
+			return $ret;
+		}
+		$course_db = new course_db;
+		$plan = $course_db->getPlan($params->plan_id);
+		if(!$plan){
+			$ret->result->msg="没有这个上课计划";
+			return $ret;
+		}
+		$teacher = user_db::getUser($plan["user_plan_id"]);
+		if(!$teacher){
+			$ret->result->msg="没有这个老师";
+			return $ret;
+		}
+		$course = $course_db->getCourse($plan["course_id"]);
+		if(!$course){
+			$ret->result->msg="没有这个课程";
+			return $ret;
+		}
+		$subdomain = user_db::getSubDomainByUserId($course["fk_user"]);
+		if(empty($subdomain)){
+			$subdomain = "www";
+		}else{
+			$subdomain = $subdomain["subdomain"];
+		}
+		$section = $course_db->getSection($plan["section_id"]);
+		if(!$section){
+			$ret->result->msg="没有这个section";
+			return $ret;
+		}
+		$starttime = split(" ", $plan["start_time"])[1];
+		$starttime = substr($starttime, 0, 5);
+		$weixin = "【高能100即将开课】\n您已报名“".$course["title"]."”，".$section["name"]."，主讲老师：".$teacher["name"]."。今日".$starttime."开课，距离上课时间还有".$params->minutes."分钟，请准时通过电脑或手机进入课堂：https://$subdomain.gn100.com/course.info.show/".$plan["course_id"];
+		$heading = $course["title"] . " 上课通知(" . $params->minutes . "分钟)：";
+		$text = "您已报名“<a href='https://$subdomain.gn100.com/course.plan.play/$params->plan_id'>".$course["title"]."</a>”，今日".$starttime."开课，距离上课时间还有".$params->minutes."分钟，请准时到达。";
+		$users = $course_db->getClassUser($plan["class_id"]);
+		if(empty($users->items)){
+			$ret->result->msg="这个班没有学生";
+			return $ret;
+		}
+		$ret->result->code = 0;
+		$ret->data = $users->items;
+		$ret->weixin = $weixin;
+		$ret->heading = $heading;
+		$ret->text = $text;
+		return $ret;
+	}
+}
+

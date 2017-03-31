@@ -1,0 +1,155 @@
+<?php
+class weixin_message{
+	public function __construct($inPath){
+	}
+
+	public function pageReceive($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1; 
+		if(empty($params->to) || empty($params->from)){
+			$ret->result->msg= "ERROR LINE[".__LINE__."]"; 
+			return $ret;
+		}
+		if(empty($params->from->union_id) || empty($params->from->open_id) || empty($params->from->uid)){
+			$ret->result->msg= "ERROR LINE[".__LINE__."]"; 
+			return $ret;
+		}
+		if(empty($params->type) || empty($params->message)){
+			$ret->result->msg= "ERROR LINE[".__LINE__."]"; 
+			return $ret;
+		}
+		//检查用户是否存在
+		$db = new user_db;
+		$user_info = $db->getUser($params->from->uid);
+		$user_parterner=$db->getUserByPaterner(user_const::SOURCE_WEIXIN,$params->from->union_id);
+		if(empty($user_info) || empty($user_parterner)){
+			$ret->result->msg= "user not exists in t_user && t_user_parterner"; 
+			return $ret;
+		}
+		if($user_info['pk_user']!=$user_parterner['fk_user']){
+			//用户不存在
+			$ret->result->msg= "user not same in t_user && t_user_parterner"; 
+			return $ret;
+		}
+		//写入消息信息
+		$weixin_db = new weixin_db;
+		$receive=array();
+		$receive['to_user_name']	=	$params->to;
+		$receive['from_fk_user']	=	$params->from->uid;
+		$receive['from_open_id']	=	$params->from->open_id;
+		$receive['from_union_id']	=	$params->from->union_id;
+		$receive['createtime']		=	@$params->createtime;
+		$receive['type']			=	@$params->type;
+		$receive['msg_id']			=	@$params->msg_id;
+		$receive['message']			=	@$params->message;
+		$receive['reply_expired_time']			=	date("Y-m-d H:i:s",@$params->createtime+48*3600);
+		$receive['create_time']			=	date("Y-m-d H:i:s");
+		$ret_id = $weixin_db->addRecieve($receive);
+		if(empty($ret_id)){
+			$ret->result->code = -2; 
+			return $ret;
+		}
+		//写入文件信息
+		if(!empty($params->media_file) && is_array($params->media_file)){
+			foreach($params->media_file as $file){
+				if(!empty($file->media_id) && !empty($file->file_id)){
+					$fileInfo=array("media_id"=>$file->media_id,"file_id"=>$file->file_id,"create_time"=>date("Y-m-d H:i:s"));
+					$weixin_db->addMedia($fileInfo);
+				}
+			}
+		}
+		$ret->result->code = 0; 
+		return $ret;
+
+	}
+	public function pageReply($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1; 
+		if(empty($inPath[3])){
+			return $ret;
+		}
+		if(empty($params->type) || empty($params->message)){
+			return $ret;
+		}
+		//获取消息
+		$weixin_db = new weixin_db;
+		$receive = $weixin_db->getRecieve($inPath[3]);
+		if(empty($receive)){
+			$ret->result->code = -2; 
+			return $ret;
+		}
+		//组织成发送的包
+		require_once(ROOT_LIBS."/weixin/mp/wechat.class.php");
+		$config=$weixin_db->getConfig();
+		$weObj = new Wechat($config);
+		$data=array(
+			"touser"		=>$receive['from_open_id'],
+			"msgtype"		=>$params->type,
+			$params->type	=>SJson::decode(SJson::encode($params->message),true),
+		);
+		$ret_send = $weObj->sendCustomMessage($data);
+		$ret_send_code=-9999;
+		if(empty($ret_send) || $ret_send['errcode']!==0){
+			$ret->result->code = -3; 
+			$ret->result->test= $data; 
+			$ret->result->test2= $ret_send; 
+			$ret_send_code=$ret_send['errcode'];
+			$ret->result->msg="send error,code is ".$ret_send['errcode']." !";
+		}else{
+			$ret_send_code=$ret_send['errcode'];
+			$ret->result->code = 0; 
+		}
+		//入库
+		$Reply=array();
+		$Reply['fk_receive']	=	$receive['pk_receive'];
+		$Reply['to_fk_user']	=	$receive['from_fk_user'];
+		$Reply['to_open_id']	=	$receive['from_open_id'];
+		$Reply['type']			=	$params->type;
+		$Reply['message']		=	SJson::encode($params->message);
+		$Reply['ret_code']		=	$ret_send_code;
+		$Reply['create_time']	=	date("Y-m-d H:i:s");
+		$ret_db = $weixin_db->addReply($Reply);
+		return $ret;
+	}
+	public function pageList($inPath){
+		$page = !empty($inPath[3])?$inPath[3]:1;
+		$pn   = !empty($inPath[4])?$inPath[4]:20;
+		$params=SJson::decode(utility_net::getPostData());
+		$condition=array();
+		if(!empty($params->type)){
+			$condition['type']=$params->type;
+		}
+		if(!empty($params->fk_user)){
+			$condition['from_fk_user']=$params->fk_user;
+		}
+		$ret = new stdclass;
+		$ret->data =array();
+		$db = new weixin_db;
+		$db_user = new user_db;
+		$r = $db->listRecieve($condition,$page,$pn);
+		if(!empty($r->items)){
+			foreach($r->items as &$item){
+				$message=SJson::decode($item['message'],true);
+				foreach($message as $k=>$v){
+					if(stripos($k,"mediaid")!==false){
+						$r_m  = $db->getMediaByMid($v);
+						$message[$k."_fid"]=$r_m['file_id'];
+					}
+				}
+				$item['message']=$message;
+				$item['user']=$db_user->getBasicUser($item['from_fk_user']);
+			}
+		}
+		$ret->page=$r->page;
+		$ret->size=$r->pageSize;
+		$ret->total=$r->totalPage;
+		$ret->data=$r->items;
+		return $ret;
+
+	}
+}
+

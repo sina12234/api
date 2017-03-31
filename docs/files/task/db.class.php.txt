@@ -1,0 +1,264 @@
+<?php
+
+/**
+ * @author zhangtaifeng
+ */
+class task_db{
+    var $_db;
+    var $_config;
+    public function __construct($dbname="db_course"){
+        $this->_db = new SDb;
+        $this->_db->useConfig($dbname,"main");
+    }
+    public function addTask($data){
+        $table = array("t_task");
+        return $this->_db->insert($table, $data);
+    }
+    public function updateTask($tid,$data){
+        $table = array("t_task");
+        $condition=array('pk_task'=>$tid);
+        return $this->_db->update($table,$condition,$data);
+    }
+    public function deleteTask($tid){
+        $table = array("t_task");
+        $condition=array('pk_task'=>$tid);
+        return $this->_db->delete($table,$condition);
+    }
+    public function countReply($tids){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+                'fk_task in ('.$tids.')',
+                'status'=>2,
+            );
+        $items=array(
+                'fk_task',
+                'count(*) as num',
+            );
+        $group=array('fk_task');
+        return $this->_db->select($table,$condition,$items,$group,"","");
+    }
+    public function taskListByOwner($uid,$page=1,$length=20){
+//define('DEBUG',true);
+        $table = array("t_task");
+        $condition=array(
+                't_task.fk_user_owner'=>$uid,
+            );
+        $items=array(
+                't_task.*',
+                't_course_class.name as class_name'
+            );
+        $left=array(
+                't_course_class'=>'t_course_class.pk_class=t_task.fk_class',
+            );
+        $this->_db->setPage($page);
+        $this->_db->setLimit($length);
+        $this->_db->setCount(true);
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+    public function taskListByPlan($pid,$page=1,$length=20){
+//define('DEBUG',true);
+        $table = array("t_task");
+        $condition=array(
+                't_task.fk_plan'=>$pid,
+            );
+        $items=array(
+                't_task.*',
+                't_course_class.name as class_name'
+            );
+        $left=array(
+                't_course_class'=>'t_course_class.pk_class=t_task.fk_class',
+            );
+        $this->_db->setPage($page);
+        $this->_db->setLimit($length);
+        $this->_db->setCount(true);
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+	public function getTask($tid){
+//define('DEBUG',true);
+		$table=array("t_task");
+        $condition=array(
+                'pk_task'=>$tid,
+            );
+		return $this->_db->selectone($table,$condition);
+	}
+    public function handinCount($tid){
+        $table = array("t_task");
+        $condition=array('pk_task'=>$tid);
+        $data=array(
+                'handin_count=handin_count+1' 
+            );
+        return $this->_db->update($table,$condition,$data);
+    }
+    public function addTaskReplay($data){
+        $table = array("t_task_replay");
+        return $this->_db->insert($table, $data);
+    }
+    public function addMoreTaskReply($data){
+//define('DEBUG',true);
+        $table = 't_task_reply';
+        $keys=array();
+        $values='';
+        foreach($data as $arr){
+            $values.='(';
+            foreach($arr as $k=>$v){
+                $keys[$k]=$k; 
+                $values.=$v.','; 
+            }
+            $values=trim($values,',');
+            $values.='),';
+        }
+        $values=trim($values,',');
+        $keys=implode(',',$keys);
+        $sql='insert into '.$table.' ('.$keys.') values '.$values;
+        return $this->_db->execute($sql);
+    }
+    public function updateTaskReplyStatus($trid,$status){
+        $table = array("t_task_reply");
+        $condition=array('pk_task_reply'=>$trid);
+        $data=array(
+                'status'=>$status
+            );
+        return $this->_db->update($table,$condition,$data);
+    }
+    public function updateTaskReplyScore($trid,$score){
+        $table = array("t_task_reply");
+        $condition=array('pk_task_reply'=>$trid);
+        $data=array(
+                'score'=>$score
+            );
+        return $this->_db->update($table,$condition,$data);
+    }
+    public function getReplyList($condition,$page=1,$length=20){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        //$condition=array(
+        //       'fk_user_reply'=>$uid,
+        //   );
+        $items=array(
+                't_task_reply.*',
+                't_task.title as task_title',
+                't_course.title as course_title',
+                'db_user.t_user.name as user_name'
+            );
+        $left=array(
+                't_task'=>'t_task.pk_task=t_task_reply.fk_task',
+                't_course'=>'t_course.pk_course=t_task.fk_course',
+                'db_user.t_user'=>'db_user.t_user.pk_user=t_task_reply.fk_user_reply'
+            );
+        $this->_db->setPage($page);
+        $this->_db->setLimit($length);
+        $this->_db->setCount(true);
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+    public function getReplyListByTid($tid){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+               'fk_task'=>$tid,
+           );
+        return $this->_db->select($table,$condition,"*","","","");
+    }
+    public function getReplyInfo($rid){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+               'pk_task_reply'=>$rid,
+           );
+        $items=array(
+                't_task_reply.*',
+                't_task.title as task_title',
+                't_task.desc as task_desc',
+                't_task.attach as task_attach',
+                't_course.title as course_title'
+            );
+        $left=array(
+                't_task'=>'t_task.pk_task=t_task_reply.fk_task',
+                't_course'=>'t_course.pk_course=t_task.fk_course'
+            );
+        return $this->_db->selectOne($table,$condition,$items,"","",$left);
+    }
+    public function getCourseClassSection($uid){
+//define('DEBUG',true);
+        $table = array("t_course_plan");
+        $condition=array(
+               't_course_plan.fk_user'=>$uid,
+           );
+        $items=array(
+                't_course.pk_course as course_id',
+                't_course.title as course_name',
+                't_course_class.pk_class as class_id',
+                't_course_class.name as class_name',
+                't_course_section.pk_section as section_id',
+                't_course_section.name as section_name',
+            );
+        $left=array(
+                't_course'=>'t_course.pk_course=t_course_plan.fk_course',
+                't_course_class'=>'t_course_class.pk_class=t_course_plan.fk_class',
+                't_course_section'=>'t_course_section.pk_section=t_course_plan.fk_section',
+            );
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+    public function getReplyClass($uid){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+               'fk_user_reply'=>$uid,
+           );
+        $items=array(
+                't_course_class.pk_class as class_id',
+                't_course_class.name as class_name'
+            );
+        $left=array(
+                't_task'=>'t_task.pk_task=t_task_reply.fk_task',
+                't_course'=>'t_course.pk_course=t_task.fk_course',
+                't_course_class'=>'t_course_class.pk_class=t_task.fk_class'
+            );
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+    public function getReplySection($uid){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+               'fk_user_reply'=>$uid,
+           );
+        $items=array(
+                't_course_section.pk_section as section_id',
+                't_course_section.name as section_name'
+            );
+        $left=array(
+                't_task'=>'t_task.pk_task=t_task_reply.fk_task',
+                't_course'=>'t_course.pk_course=t_task.fk_course',
+                't_course_section'=>'t_course_section.pk_section=t_task.fk_section'
+            );
+        return $this->_db->select($table,$condition,$items,"","",$left);
+    }
+    public function countReplyStatus($uid){
+//define('DEBUG',true);
+        $table = array("t_task_reply");
+        $condition=array(
+               'fk_user_reply'=>$uid,
+           );
+        $items=array(
+                'status'=>'status',
+                'count'=>'count(*)',
+            );
+        $group=array('status');
+        $order=array('status'=>'asc');
+        return $this->_db->select($table,$condition,$items,$group,$order,"");
+    }
+    public function addTaskAttach($data){
+        $table = array("t_task_attach");
+        return $this->_db->insert($table, $data);
+    }
+    public function getAttachList($rid){
+//define('DEBUG',true);
+        $table = array("t_task_attach");
+        $condition=array(
+                'fk_task_reply'=>$rid,
+            );
+        $orderby=array('last_updated'=>'asc');
+        return $this->_db->select($table,$condition,"","",$orderby,"");
+    }
+}
+

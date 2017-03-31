@@ -1,0 +1,934 @@
+<?php
+class user_db{
+
+	static  $userProfileItems = array(
+		"user_id"=>"pk_user",
+		"t_user_student_profile.grade",
+		"t_user_student_profile.student_name",
+		"t_user_student_profile.region_level0",
+		"t_user_student_profile.region_level1",
+		"t_user_student_profile.region_level2",
+		"t_user_student_profile.school_type",
+		"t_user_student_profile.school_id",
+		"t_user.name",
+		"t_user.gender",
+		"t_user.thumb_big",
+		"t_user.thumb_small",
+		"t_user.thumb_med",
+		"t_user.register_ip",
+		"t_user.create_time",
+		"t_user_mobile.mobile",
+		"t_user_mobile.supplier",
+		"t_user_mobile.province",
+		"t_user_mobile.city"
+	);
+	public static function InitDB($dbname="db_user",$dbtype="main") {
+		redis_api::useConfig($dbname);
+		$db = new SDb();
+		$db->useConfig($dbname, $dbtype);
+		return $db;
+	}
+	
+	// verify_status 已注册未登录的时候设置为0 等登陆的时候该值设置为1
+	public static function addUser($data){
+		$table=array("t_user");
+		$db = self::InitDB();
+		$data["verify_status"] = 0;
+		return $db->insert($table,$data);
+	}
+	
+	public static function addUserParterner($data){
+		$table=array("t_user_parterner");
+		$db = self::InitDB();
+		return $db->insert($table,$data);
+	}
+
+	public static function updateUserParterner($source,$uid,$data){
+		$table=array("t_user_parterner");
+		$db = self::InitDB();
+		return $db->update($table, array('parterner_uid' => $uid,"source"=>$source), $data);
+	}
+	
+	public static function addUserEmail($data){
+		$table=array("t_user_email");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+    }
+
+	public static function addUserMobile($data){
+		$table=array("t_user_mobile");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	
+	public static function addUserProfile($data){
+		$table=array("t_user_profile");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	
+	public static function updateUser($uid, $data){
+		$db = self::InitDB();
+		$key =md5( "user_db.t_user.".$uid);
+		$key_2 =md5( "user_db.t_user_student_profile.".$uid);
+		$v = redis_api::del($key);
+		$v = redis_api::del($key_2);
+
+		$table=array("t_user");
+		return $db->update($table, array('pk_user' => $uid), $data);
+	}
+	
+	public static function updateUserMobile($uid, $data){
+		$db = self::InitDB();
+		$key =md5( "user_db.t_user.".$uid);
+		$v = redis_api::del($key);
+		$table=array("t_user_mobile");
+		return $db->update($table, array('fk_user' => $uid), $data);
+	}
+	
+	public static function updateUserEmail($uid, $data){
+		$db = self::InitDB();
+		$key =md5( "user_db.t_user.".$uid);
+		$v = redis_api::del($key);
+		$table=array("t_user_email");
+		return $db->update($table, array('fk_user' => $uid), $data);
+	}
+	
+	public static function updateUserProfile($uid, $data){
+		$db = self::InitDB();
+		$key =md5( "user_db.t_user.".$uid);
+		$v = redis_api::del($key);
+		$table=array("t_user_profile");
+		return $db->update($table, array('fk_user' => $uid), $data);
+	}
+	
+	public static function getUser($uid){
+		$db = self::InitDB("db_user","query");
+		$key =md5( "user_db.t_user.".$uid);
+		$v = redis_api::get($key);
+		if($v){return $v;}
+		$table=array("t_user");
+		$v = $db->selectOne($table,array("pk_user"=>$uid), "*");
+		redis_api::set($key,$v,300);
+		return $v;
+	}
+	public static function getBasicUser($uid){
+		return self::getUser($uid);
+	}
+	public static function getStudentUser($id){
+		$db = self::InitDB("db_user","query");
+		$keyHash =md5( "user_db.t_user_student_profile.v2.".$id);
+		$v = redis_api::get($keyHash);
+		if($v!==false){return $v;}
+
+		$table=array("t_user");
+		$left=new stdclass;
+		$left->t_user_student_profile="t_user_student_profile.fk_user = t_user.pk_user";
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$v = $db->selectOne(
+			$table,array("pk_user"=>$id), self::$userProfileItems, "","",$left
+		);
+		if(!$v)$v=0;
+		$r = redis_api::set($keyHash,$v,300);
+		return $v;
+	}
+	/**
+	 * 根据一批用户ID获取用户数据
+	 */
+	public static function getStudentUsers($ids){
+		if(empty($ids))return false;
+		$db = self::InitDB("db_user","query");
+		$result=array();
+		$keys=array();
+		foreach($ids as $id){
+			$keys[] =md5( "user_db.t_user_student_profile.v2.".$id);
+		}
+		$ret = redis_api::mGet($keys);
+		$ok=true;
+		foreach($ret as $v){
+
+			if($v===false){
+				$ok=false;
+			}
+		}
+		if($ok)return $ret;
+
+		if($ok==false){
+
+			$table=array("t_user");
+			$left=new stdclass;
+			$left->t_user_student_profile="t_user_student_profile.fk_user = t_user.pk_user";
+			$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+			$v = $db->select( $table, array("pk_user in(".implode(",",$ids).")"),self::$userProfileItems ,"","",$left);
+
+			if(!empty($v->items)){
+				$ret=array();
+				foreach($v->items as $item){
+					$id = $item['user_id'];
+					$key =md5( "user_db.t_user_student_profile.".$id);
+					$ret[$key]=$item;
+				}
+				$r = redis_api::mSet($ret);
+				return $ret;
+			}
+		}
+	}
+	
+	public static function getUserProfile($id){
+		$table=array("t_user_profile");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$id), "*");
+	}
+	
+	public static function getUserIDByEmail($email){
+		$table=array("t_user_email");
+        $db = self::InitDB("db_user","query");
+		$ret = $db->selectOne($table,array("email"=>strtolower($email)));
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+	
+	public static function getUserIDByMobile($mobile){
+		$table=array("t_user_mobile");
+        $db = self::InitDB("db_user","query");
+		$ret = $db->selectOne($table,array("mobile"=>$mobile));
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+	
+	public static function getUserIDByPaterner($source,$uid){
+		$ret = self::getUserByPaterner($source,$uid);
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+	public static function getUserParterner($source,$uid){
+		$table=array("t_user_parterner");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("source"=>$source,"parterner_uid"=>$uid));
+	}
+	public static function bindParterner($parterner_id,$uid){
+		$table=array("t_user_parterner");
+        $db = self::InitDB("db_user","query");
+		return $db->update($table,array("pk_parterner"=>$parterner_id),array("fk_user"=>$uid));
+	}
+	public static function getUserParternerById($parterner_id){
+		$table=array("t_user_parterner");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("pk_parterner"=>$parterner_id));
+	}
+	public static function getUserParternerByUId($source,$uid){
+		$table=array("t_user_parterner");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$uid,"source"=>$source));
+	}
+	
+	public static function getUserEmailByID($id){
+		$table=array("t_user_email");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$id), "*");
+	}
+	
+	public static function getUserMobileByID($id){
+		$table=array("t_user_mobile");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$id), "*");
+	}
+	
+	public static function getUserProfileByID($id){
+		$table=array("t_user_profile");
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$id), "*");
+	}
+
+	public static function listUser($page = 1, $length = 20){
+		$table=array("t_user");
+        $db = self::InitDB("db_user","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		$item = 't_user.*,t_user_email.email,';
+		$item .= 't_user_mobile.mobile,t_user_mobile.supplier,t_user_mobile.province,t_user_mobile.city';
+		$left=new stdclass;
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$left->t_user_email="t_user_email.fk_user = t_user.pk_user";
+		$left->t_user_student_profile="t_user_student_profile.fk_user = t_user.pk_user";
+		return $db->select($table, '', $item, '', 'pk_user desc',$left);
+	}
+	public static function listTeacher($page = 1, $length = 20){
+		//$table=array("t_user","t_user_teacher_profile");
+		$table=array("t_user");
+        $db = self::InitDB("db_user","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		$item = 't_user.*,t_user_email.email,';
+		$item .= 't_user_mobile.mobile,t_user_mobile.supplier,t_user_mobile.province,t_user_mobile.city,';
+		$item .= 't_user_teacher_profile.title,';
+		$item .= 't_user_teacher_profile.college,';
+		$item .= 't_user_teacher_profile.years,';
+		$item .= 't_user_teacher_profile.diploma';
+		$left=new stdclass;
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$left->t_user_email="t_user_email.fk_user = t_user.pk_user";
+		$left->t_user_teacher_profile="t_user_teacher_profile.fk_user = t_user.pk_user";
+		$orderby = array("pk_user"=>"desc");
+		return $db->select($table, array('type & 0x02 > 0',"t_user_teacher_profile.fk_user=t_user.pk_user"), $item, '',$orderby,$left);
+	}
+	
+	public static function listOrganization($page = 1, $length = 20){
+		$table=array("t_user");
+        $db = self::InitDB("db_user","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		$item = 't_user.*,t_user_email.email,';
+		$item .= 't_user_mobile.mobile,t_user_mobile.supplier,t_user_mobile.province,t_user_mobile.city';
+		//$item .= 't_user_parterner.source,t_user_parterner.parterner_uid,t_user_parterner.thumb_url,';
+		//$item .= 't_user_parterner.auth_code,t_user_student_profile.grade';
+		/*
+		$item = 't_user_profile.real_name,t_user_profile.address,';
+		$item = 't_user_profile.birth_place,t_user_profile.desc,t_user_profile.zip_code,';
+		*/
+		$left=new stdclass;
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$left->t_user_email="t_user_email.fk_user = t_user.pk_user";
+		$left->t_user_parterner="t_user_parterner.fk_user = t_user.pk_user";
+		//$left->t_user_profile="t_user_profile.fk_user = t_user.pk_user";
+		$left->t_user_student_profile="t_user_student_profile.fk_user = t_user.pk_user";
+		return $db->select($table, 'type & 0x04 > 0', $item, '', 'pk_user desc',$left);
+	}
+
+	public static function listStudent($page = 1, $length = 20){
+		$table=array("t_user");
+        $db = self::InitDB("db_user","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		$item = 't_user.*,t_user_email.email,';
+		$item .= 't_user_mobile.mobile,t_user_mobile.supplier,t_user_mobile.province,t_user_mobile.city';
+		//$item .= 't_user_parterner.source,t_user_parterner.parterner_uid,t_user_parterner.thumb_url,';
+		//$item .= 't_user_parterner.auth_code,t_user_student_profile.grade';
+		/*
+		$item = 't_user_profile.real_name,t_user_profile.address,';
+		$item = 't_user_profile.birth_place,t_user_profile.desc,t_user_profile.zip_code,';
+		*/
+		$left=new stdclass;
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$left->t_user_email="t_user_email.fk_user = t_user.pk_user";
+		//$left->t_user_parterner="t_user_parterner.fk_user = t_user.pk_user";
+		//$left->t_user_profile="t_user_profile.fk_user = t_user.pk_user";
+		$left->t_user_student_profile="t_user_student_profile.fk_user = t_user.pk_user";
+		return $db->select($table, 'type & 0x01 > 0', $item, '', 'pk_user desc',$left);
+	}
+	
+	public static function listUserByGrade($grade, $page = 1, $length = 20){
+		if (empty($grade) || !is_int($grade)) {
+			$condition = array();
+		} else {
+			$condition = array('grade'=>$grade);
+		}
+		$table=array("t_user_student_profile");
+        $db = self::InitDB("db_user","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		$item = 't_user.*,t_user_email.email,';
+		$item .= 't_user_mobile.mobile,t_user_mobile.supplier,t_user_mobile.province,t_user_mobile.city';
+		//$item .= 't_user_parterner.source,t_user_parterner.parterner_uid,t_user_parterner.thumb_url,';
+		//$item .= 't_user_parterner.auth_code,t_user_student_profile.grade, t_user_student_profile.fk_user';
+		$left=new stdclass;
+		$left->t_user="t_user.pk_user = t_user_student_profile.fk_user";
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user_student_profile.fk_user";
+		$left->t_user_email="t_user_email.fk_user = t_user_student_profile.fk_user";
+		//$left->t_user_parterner="t_user_parterner.fk_user = t_user_student_profile.fk_user";
+		return $db->select($table, $condition, $item, '', 'fk_user desc',$left);
+	}
+	//for sphinx indexing course
+	public static function listUsersByUserIds( $idsStr ){
+        $db = self::InitDB("db_user","query");
+		$condition = array("pk_user in ( $idsStr )");
+		$item = array('pk_user','name','thumb_big','thumb_med','thumb_small');
+		$table = array("t_user");
+		return $db->select($table, $condition, $item, '', '', '');
+	}
+
+	public static function setStudentProfile($data){
+		$key =md5( "user_db.t_user.".$data['fk_user']);
+		$keyHash =md5( "user_db.t_user_student_profile.v2.".$data["fk_user"]);
+		redis_api::del($key);
+		redis_api::del($keyHash);
+		$table=array("t_user_student_profile");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	public static function getStudentProfile($id){
+		return self::getStudentUser($id);
+/*
+		//$key =md5( "user_db.t_user.".$id);
+		$keyHash =md5( "user_db.t_user_student_profile.".$id);
+		$v = redis_api::get($keyHash);
+		if($v!==false){return $v;}
+		$table=array("t_user_student_profile");
+		$item=array(
+			"user_id"=>"fk_user",
+			"grade",
+			"student_name",
+			"region_level0",
+			"region_level1",
+			"region_level2",
+			"school_type",
+			"school_id",
+		);
+        $db = self::InitDB("db_user","query");
+		return $db->selectOne($table,array("fk_user"=>$id),$item);
+*/
+	}
+	public static function getTeacherProfile($uid,$desc=true){
+		$table=array("t_user_teacher_profile");
+        $db = self::InitDB("db_user","query");
+		$item=new stdclass;
+		$item->title= "title";
+		$item->college= "college";
+		$item->years= "years";
+		$item->diploma= "diploma";
+		$item->desc= "desc";
+		$item->major= "major";
+		return $db->selectOne($table,array("fk_user"=>$uid),$item);
+	}
+	public static function getTeacherProfileByIds($idsArr){
+        $db = self::InitDB("db_user","query");
+        $sql='select a.name,a.thumb_small,b.* from t_user as a left join t_user_teacher_profile as b on a.pk_user=b.fk_user where a.pk_user in ('.implode(',',$idsArr).')';
+        return $db->execute($sql);
+	}
+	public static function setTeacherProfile($uid,$data){
+		$table=array("t_user_teacher_profile");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	public static function updateToken($token,$Token){
+		$db = self::InitDB();
+		//{{{
+		$key = "t_token.$token";
+		return redis_api::set($key,$Token,3600*24*30);//存在30天
+		//}}}
+		//TODO 未来token不需要存在数据库里
+		//$table=array("t_token");
+		//return $db->update($table,array("token"=>$token),$Token);	
+	}
+	public static function addToken($data){
+		$db = self::InitDB();
+		//{{{
+		$key =md5( "t_token.".$data['token']);
+		return redis_api::set($key,$data,3600*24*30);
+		//}}}
+		//$table=array("t_token");
+		//return $db->insert($table,$data);
+	}
+	public static function getToken($token){
+		$db = self::InitDB();
+		//{{{
+		$key = "t_token.$token";
+		$key =md5( "t_token.".$token);
+		return redis_api::get($key);
+		//}}}
+
+		//$table=array("t_token");
+		//return $db->selectone($table,array("token"=>$token));
+	}
+	/* 列取所有机构
+	 * 根据id列取机构
+	 */
+	public static function listorg($uid = null,$page = null,$length =null){
+        $db = self::InitDB("db_user","query");
+		$key =md5( "db_user.t_organization.$uid.$page.$length");
+		$v = redis_api::get($key);
+		if($v)return $v;
+
+		$table=array("t_organization");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$condition = array("status"=>"1");//1:通过审核 0: 未通过审核
+		if($uid == "0"){$oid = null;}
+	//	if($oid)$condition["pk_org"]=$uid;
+		if($uid)$condition["fk_user_owner"]=$uid;
+		$item = array("pk_org","fk_user_owner",
+					  "thumb_big","thumb_med","thumb_small",
+					  "desc","status","name",
+					  "create_time","last_updated");
+		$orderby = array("pk_org"=>"desc");
+		$v = $db->select($table,$condition,$item,"",$orderby,"");
+		redis_api::set($key,$v,120);
+		return $v;
+	}
+	/*根据机构id查出用户
+	 *
+	 */
+	public static function listOrgUser($oid=0 ,$all=1,$star=0,$page = null,$length =null){
+		$table=array("t_organization_user","t_user","t_user_mobile");
+        $db = self::InitDB("db_user","query");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$condition = array();
+		$condition = array("t_organization_user.status <> -1");
+		if($oid)$condition["fk_org"]=$oid;
+		$condition[]="pk_user=t_organization_user.fk_user";
+		$condition[]="pk_user=t_user_mobile.fk_user";
+		if(!$all)$condition[]="t_organization_user.sort > 0 ";
+		if($star)$condition[]="t_organization_user.is_star > 0 ";
+		$left=new stdclass;
+		$left->t_user_teacher_profile="t_user_teacher_profile.fk_user = t_user.pk_user";
+		//$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$item = array("org_id"=>"fk_org","mobile",
+			"user_id"=>"t_organization_user.fk_user",
+			"name","thumb_med","thumb_small","thumb_big",
+			"t_organization_user.status",
+			"t_user_teacher_profile.title",
+			"t_user_teacher_profile.college",
+			"t_user_teacher_profile.years",
+			"t_user_teacher_profile.diploma",
+			"t_user_teacher_profile.desc",
+			"t_user_teacher_profile.major",
+			"announce",
+			"thumb_nav",
+			"is_star",
+			"sort");
+		$orderby = array("t_organization_user.sort"=>"asc");
+		return $db->select($table,$condition,$item,"",$orderby,$left);
+	}
+	/*根据user_id查出用户
+	 *
+	 */
+	public static function listOrgUserByUid($uid=0 ,$page = null,$length =null){
+		$table=array("t_organization_user","t_user","t_user_mobile");
+        $db = self::InitDB("db_user","query");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$condition = array();
+		$condition = array("t_organization_user.status <> -1");
+		if($uid)$condition["t_organization_user.fk_user"]=$uid;
+		$condition[]="pk_user=t_organization_user.fk_user";
+		$condition[]="pk_user=t_user_mobile.fk_user";
+		$left=new stdclass;
+		$left->t_user_teacher_profile="t_user_teacher_profile.fk_user = t_user.pk_user";
+		$item = array("org_id"=>"fk_org","mobile",
+			"user_id"=>"t_organization_user.fk_user",
+			"name","thumb_med","thumb_small","thumb_big",
+			"t_organization_user.status",
+			"t_user_teacher_profile.title",
+			"t_user_teacher_profile.college",
+			"t_user_teacher_profile.years",
+			"t_user_teacher_profile.diploma",
+			"t_user_teacher_profile.desc",
+			"t_user_teacher_profile.major",
+			"announce",
+			"thumb_nav",
+			"is_star",
+			"sort");
+		$orderby = array("t_organization_user.sort"=>"asc");
+		return $db->select($table,$condition,$item,"",$orderby,$left);
+	}
+	/*根据机构id 科目查出用户
+	 *
+	 */
+	/*
+	 *根据用户ID 查出所属机构
+	 */
+	public static function getOrgUser($uid ,$page = null,$length =null){
+		$table=array("t_organization_user");
+        $db = self::InitDB("db_user","query");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$condition["t_organization_user.fk_user"]=$uid;
+		$item = array(
+			"org_id"=>"fk_org",
+			"org_user"=>"t_organization_user.fk_user",
+			"org_status"=>"t_organization_user.status",
+			"org_name"=>"t_organization.name",
+			//"org_thumb_big"=>"t_organization.thumb_big",
+			//"org_thumb_med"=>"t_organization.thumb_med",
+			//"org_thumb_small"=>"t_organization.thumb_small",
+			"user_name"=>"t_user.name",
+			"thumb_big"=>"t_user.thumb_big",
+			"thumb_med"=>"t_user.thumb_med",
+			"thumb_small"=>"t_user.thumb_small",
+		);
+		$orderby = array("t_organization_user.last_updated"=>"desc");
+		$left=new stdclass;
+		$left->t_user="t_organization_user.fk_user = t_user.pk_user";
+		$left->t_organization="t_organization.fk_user_owner= t_user.pk_user";
+		$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		return $db->selectone($table,$condition,$item,"",$orderby,$left);
+	}
+	public static function getOrgUserinfo($oid=0,$uid=0,$page = null,$length =null){
+		$table=array("t_organization_user","t_user","t_user_mobile");
+        $db = self::InitDB("db_user","query");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$condition = array();
+		$condition = array("t_organization_user.status <> -1");
+		if($oid)$condition["fk_org"]=$oid;
+		if($uid)$condition["t_organization_user.fk_user"]=$uid;
+		$condition[]="pk_user=t_organization_user.fk_user";
+		$condition[]="pk_user=t_user_mobile.fk_user";
+		$left=new stdclass;
+		$left->t_user_teacher_profile="t_user_teacher_profile.fk_user = t_user.pk_user";
+		//$left->t_user_mobile="t_user_mobile.fk_user = t_user.pk_user";
+		$item = array("org_id"=>"fk_org","mobile",
+			"user_id"=>"t_organization_user.fk_user",
+			"name","thumb_med","thumb_small","thumb_big",
+			"t_organization_user.status",
+			"t_user_teacher_profile.title",
+			"t_user_teacher_profile.college",
+			"t_user_teacher_profile.years",
+			"t_user_teacher_profile.diploma",
+			"t_user_teacher_profile.desc",
+			"announce",
+			"thumb_nav",
+			"sort");
+		$orderby = array("t_organization_user.sort"=>"desc");
+		return $db->selectone($table,$condition,$item,"",$orderby,$left);
+	}
+	public static function setOrgUser($oid ,$user_id,$data, $status=1){
+		$table=array("t_organization_user");
+		$db = self::InitDB();
+		$item=array("fk_org"=>$oid,"fk_user"=>$user_id,"sort"=>$data["sort"],"is_star"=>$data["is_star"],"status"=>$status,"last_updated"=>date("Y-m-d H:i:s"));
+		return $db->insert($table,$item,true);
+	}
+	public static function setOrgUsersort($oid ,$user_id,$sort=0){
+		$table=array("t_organization_user");
+		$db = self::InitDB();
+		$item=array("fk_org"=>$oid,"fk_user"=>$user_id);
+		return $db->update($table,$item,array("sort"=>$sort));
+	}
+	public static function setOtherOrgUser($uparray,$where){
+		$table=array("t_organization_user");
+		$db = self::InitDB();
+		return $db->update($table,$where,$uparray);
+	}
+	public static function delOrgUser($oid ,$user_id){
+		$table=array("t_organization_user");
+		$db = self::InitDB();
+		$item=array("fk_org"=>$oid,"fk_user"=>$user_id);
+		return $db->update($table,$item,array("status"=>"-1"));	
+	}
+/*	public static function delOrgUser($oid ,$user_id){
+		$table=array("t_organization_user");
+		$db = self::InitDB();
+		$item=array("fk_org"=>$oid,"fk_user"=>$user_id);
+		return $db->delete($table,$item);
+	}
+*/
+	public static function addorg($org){
+		$table=array("t_organization");
+		$db = self::InitDB();
+		return $db->insert($table,$org);
+	}
+	public static function getorg($oid){
+		$table=array("t_organization");
+        $db = self::InitDB("db_user","query");
+		return $db->selectone($table,array("pk_org"=>$oid));
+	}
+	public static function getOrgProfileByUid($uid){
+        $db = self::InitDB("db_user","query");
+		//$key =md5("db_user.t_organization_profile.$uid");
+		//$v = redis_api::get($key);
+	//	if($v!==false)return $v;
+
+		$table=array("t_organization_profile");
+        $condition=array("fk_user_owner"=>$uid);
+		$v = $db->selectone($table,$condition,"*","","","");
+		//if(!$v)$v=0;
+		//redis_api::set($key,$v,120);
+		return $v;
+	}
+	public static function addOrgProfile($data){
+//define('DEBUG',true);
+		$table=array("t_organization_profile");
+		$db = self::InitDB();
+		return $db->insert($table,$data);
+	}
+	public function updateOrgProfile($uid,$data){
+//define('DEBUG',true);
+		//$key =md5("db_user.t_organization_profile.$uid");
+		//redis_api::del($key);
+		$table=array("t_organization_profile");
+		$db = self::initdb();
+		return $db->update($table,array("fk_user_owner"=>$uid),$data);	
+	}
+	public function getOrgSlideList($uid,$page,$length){
+		$table=array("t_organization_banner");
+        $db = self::InitDB("db_user","query");
+        $condition=array("fk_user"=>$uid);
+		$db->setPage($page);
+		$db->setLimit($length);
+		return $db->select($table,$condition,"","","","");
+	}
+    public function addOrgSlide($data){
+		$table=array("t_organization_banner");
+        $db=self::initdb();
+        return $db->insert($table,$data);
+
+    }
+	public function getOrgSlide($sid){
+		$table=array("t_organization_banner");
+        $db=self::initdb();
+        $condition=array("pk_slide"=>$sid);
+		return $db->selectone($table,$condition,"","","","");
+	}
+	public static function delOrgSlide($sid){
+		$table=array("t_organization_banner");
+		$db = self::InitDB();
+		return $db->delete($table,array("pk_slide"=>$sid));	
+	}
+	public function getOrgSlideBySidUid($sid,$uid){
+		$table=array("t_organization_banner");
+        $db=self::initdb();
+        $condition=array(
+                "pk_slide"=>$sid,
+                "fk_user"=>$uid,
+            );
+		return $db->selectone($table,$condition,"","","","");
+	}
+	public function updateOrgLogo($uid,$data){
+//define('DEBUG',true);
+		$table=array("t_organization");
+		$db = self::initdb();
+		return $db->update($table,array("fk_user_owner"=>$uid),$data);	
+	}
+	public function updateOrgSlide($sid,$data){
+//define('DEBUG',true);
+		$table=array("t_organization_banner");
+		$db = self::initdb();
+		return $db->update($table,array("pk_slide"=>$sid),$data);	
+	}
+	public static function getOrgByUid($uid){
+        $db = self::InitDB("db_user","query");
+		$key =md5( "db_user.t_organization.$uid");
+		$v = redis_api::get($key);
+		if($v!==false)return $v;
+
+		$table=array("t_organization");
+        $condition=array("fk_user_owner"=>$uid);
+		$item= array(
+			"user_owner_id"=>"fk_user_owner",
+			"oid"=>"pk_org",
+			"name"=>"name",
+			"desc"=>"desc",
+			"thumb_big"=>"thumb_big",
+			"thumb_med"=>"thumb_med",
+			"thumb_small"=>"thumb_small",
+			"status"=>"status",
+			"create_time"=>"create_time",
+			"last_updated"=>"last_updated",
+		);
+		$v = $db->selectone($table,$condition,$item,"","","");
+		if(!$v)$v=0;
+		redis_api::set($key,$v,120);
+		return $v;
+	}
+	public static function getOrgAbout($uid){
+        $db = self::InitDB("db_user","query");
+		$table=array("t_organization");
+        $condition=array("fk_user_owner"=>$uid);
+		$item= array(
+			"name"=>"name",
+			"desc"=>"desc",
+		);
+		$v = $db->selectone($table,$condition,$item,"","","");
+		return $v;
+	}
+	public static function getOrgByOwner($uid){
+        $db = self::InitDB("db_user","query");
+		//$key =md5( "db_user.t_organization_info.$uid");
+		//$v = redis_api::get($key);
+		//if($v!==false)return $v;
+		$table=array("t_organization");
+        $condition=array("t_organization.fk_user_owner"=>$uid);
+		$item= array(
+			"user_owner_id"=>"t_organization.fk_user_owner",
+			"oid"=>"t_organization.pk_org",
+			"name"=>"t_organization.name",
+			"company"=>"t_organization_profile.company",
+			"province"=>"t_organization_profile.province",
+			"city"=>"t_organization_profile.city",
+			"county"=>"t_organization_profile.county",
+			"address"=>"t_organization_profile.address",
+			"areacode"=>"t_organization_profile.areacode",
+			"hotline"=>"t_organization_profile.hotline",
+			"policy"=>"t_organization_profile.policy",
+			"email"=>"t_organization_profile.email",
+			"desc"=>"t_organization.desc",
+			"thumb_big"=>"t_organization.thumb_big",
+			"thumb_med"=>"t_organization.thumb_med",
+			"thumb_small"=>"t_organization.thumb_small",
+			"status"=>"t_organization.status",
+			"create_time"=>"t_organization.create_time",
+			"last_updated"=>"t_organization.last_updated",
+		);
+        $left=array(
+                't_organization_profile'=>'t_organization_profile.fk_org=t_organization.pk_org'    
+            );
+		$v = $db->selectone($table,$condition,$item,"","",$left);
+		//if(!$v)$v=0;
+		//redis_api::set($key,$v,120);
+		return $v;
+	}
+	public static function getOrgByTeacher($uid){
+		$table=array("t_organization","t_organization_user");
+		$item= array(
+			"user_owner_id"=>"fk_user_owner",
+			"oid"=>"pk_org",
+			"name"=>"name",
+			"thumb_big"=>"thumb_big",
+			"desc"=>"desc",
+			"thumb_med"=>"thumb_med",
+			"thumb_small"=>"thumb_small",
+			"status"=>"t_organization.status",
+			"create_time"=>"t_organization.create_time",
+			"last_updated"=>"t_organization.last_updated",
+		);
+        $db = self::InitDB("db_user","query");
+		return $db->selectone($table,array("fk_user"=>$uid,"t_organization.pk_org=t_organization_user.fk_org"),$item);
+	}
+	public function updateorg($uid,$org){
+		$key =md5( "db_user.t_organization.$uid");
+		redis_api::del($key);
+		$table=array("t_organization");
+		$db = self::initdb();
+		return $db->update($table,array("fk_user_owner"=>$uid),$org);	
+	}
+	public static function getTokenStatus($livePlanId, $userId){
+		$item = new stdclass;
+		$item->live_status = "live_status";
+		$item->user_status = "user_status";
+		$table = array("t_token");
+		$condition = array("fk_user"=>$userId);
+        $db = self::InitDB("db_user","query");
+		return $db->select($table, $condition, $item);
+	}
+	public static function addFav($data){
+		$table=array("t_fav_course");
+		$db = self::InitDB();
+		return $db->insert($table,$data);
+	}
+	public static function updatefav($favid,$data){
+		$table=array("t_fav_course");
+		$db = self::initdb();
+		return $db->update($table,array("pk_fav"=>$favid),$data);	
+	}
+	public static function listFav($cid = null,$uid=null,$page,$length){
+		$table=array("t_fav_course");
+		$item = new stdclass;
+		$item->fav_id = "pk_fav";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";	
+		$condition = array();
+		if($cid){
+			$condition["fk_course"]=$cid;
+		}
+		if($uid){
+			$condition["fk_user"] =$uid; 
+		}
+        $db = self::InitDB("db_user","query");
+		if($page){
+			$db->setPage($page);
+		}
+		if($length){
+			$db->setLimit($length);
+		}
+		$orderby = array("pk_fav"=>"DESC");
+		return $db->select($table,$condition,$item,"",$orderby,"");
+	}
+    //添加公告
+    public function addNotice($data){
+        $table=array("t_notice");
+        $db=self::initdb();
+        return $db->insert($table,$data);
+
+    }
+    //修改公告
+    public function updateNotice($nid,$data){
+        $table=array("t_notice");
+        $db=self::initdb();
+        return $db->update($table,array('pk_notice_id'=>$nid),$data);
+
+    }
+    //删除公告
+    public function delNotice($nid){
+        $table=array("t_notice");
+        $db=self::initdb();
+        return $db->delete($table,array('pk_notice_id'=>$nid));
+
+    }
+    //置顶公告
+    public function topNotice($nid,$uid){
+//define('DEBUG',true);
+        $db=self::initdb();
+        $sql='update t_notice set sort=(select max(sort) from (select * from t_notice where fk_user_id='.$uid.') as a)+1 where pk_notice_id='.$nid;
+        return $db->execute($sql);
+
+    }
+    // 取消置顶公告
+    public function noTopNotice($nid){
+        $table=array("t_notice");
+        $db=self::initdb();
+        return $db->update($table,array('pk_notice_id'=>$nid),array('sort'=>0));
+
+    }
+    //公告列表
+	public function getNoticeList($page,$length,$uid=null,$condition=array()){
+		$table=array("t_notice");
+		if($uid){
+			$condition["fk_user_id"] =$uid; 
+		}
+        $db = self::InitDB("db_user","query");
+		if($page){
+			$db->setPage($page);
+		}
+		if($length){
+			$db->setLimit($length);
+		}
+		$orderby = array("sort"=>"DESC");
+		return $db->select($table,$condition,"","",$orderby,"");
+	}
+    //获取公告
+	public function getNotice($nid){
+		$table=array("t_notice");
+        $db = self::InitDB("db_user","query");
+		return $db->selectone($table,array("pk_notice_id"=>$nid));
+	}
+	//GET USERID BY SUBDOMAIN
+	public static function getUserIdBySubDomain($subdomain){
+		$db = self::InitDB("db_user","query");
+		$key =md5( "user_db.t_user_subdomain.".$subdomain);
+		$v = redis_api::get($key);
+		if($v !== FALSE){
+			return $v;
+		}
+		$table=array("t_user_subdomain");
+		$v = $db->selectOne($table,array("subdomain"=>$subdomain,"status"=>1 ), array('userId'=>'fk_user'));
+		if($v == FALSE){
+			$v = 0;
+		}	
+		redis_api::set($key,$v,86400);
+		return $v;
+	}
+	public static function getSubDomainByUserId($user_id){
+		$db = self::InitDB("db_user","query");
+		$key =md5( "user_db.t_user_subdomain.user_id.".$user_id);
+		$v = redis_api::get($key);
+		if($v !== FALSE){
+			return $v;
+		}
+		$table=array("t_user_subdomain");
+		$v = $db->selectOne($table,array("fk_user"=>$user_id,"status"=>1 ), array('subdomain'=>'subdomain'));
+		if($v == FALSE){
+			$v = 0;
+		}	
+		redis_api::set($key,$v,86400);
+		return $v;
+	}
+}
+
+

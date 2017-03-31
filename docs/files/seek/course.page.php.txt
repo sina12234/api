@@ -1,0 +1,514 @@
+<?php
+require("sphinxapi.php");
+class seek_course{
+	var $attrs = array(
+		'course_id'=>'pk_course',
+		'title'=>'title',
+		'tags'=>'tags',
+		'desc'=>'descript',
+		'thumb_big'=>'thumb_big',
+		'thumb_med'=>'thumb_med',
+		'thumb_sma'=>'thumb_small',
+		'user_thumb_big'=>'user_thumb_big',
+		'user_thumb_med'=>'user_thumb_med',
+		'user_thumb_sma'=>'user_thumb_small',
+		'user_name'=>'user_name',
+		'cate_id'=>'fk_cate',
+		'recomm_weight'=>'sort',
+		'top'=>'top',
+		'course_type'=>'fk_type',
+		'grade_id'=>'fk_grade',
+		'user_id'=>'fk_user',
+		'public_type'=>'public_type',
+		'fee_type'=>'fee_type',
+		'max_user'=>'max_user',
+		'min_user'=>'min_user',
+		'user_total'=>'user_total',
+		'status'=>'status',
+		'admin_status'=>'admin_status',
+		'system_status'=>'system_status',
+		'start_time'=>'start_time',
+		'end_time'=>'end_time',
+		'create_time'=>'create_time',
+		'last_updated'=>'last_updated',
+		'class_id'=>'class_id',
+		'section_id'=>'section_id',
+		'price'=>'price',
+		'market_price'=>'price_market',
+	);
+	var $timesArr = array('start_time'=>0,
+						  'end_time'=>0,
+						  'create_time'=>0,
+						  'last_updated'=>0
+					     );
+	public function pageList($inPath){
+		$timesArr = $this->timesArr;
+		$tmpAttrs = $this->attrs;
+		//获取列表字段
+		if(!isset($_GET['f'])){
+			$field = array(
+				'course_id',
+				'title',
+				'create_time',
+			);
+		}else{
+			$fieldStr = $_GET['f'];
+			$field = explode(' ', $fieldStr);
+			$fieldTemp = array_flip($field);
+			if(!isset($fieldTemp['course_id'])){
+				array_unshift($field, 'course_id');
+			}
+		}
+		//获取查询条件
+		if(!isset($_GET['q'])){
+			$query = array();
+		}else{
+			$queryStr = $_GET['q'];
+			$query = explode(' ', $queryStr);
+		}
+		$queryArr = array();
+		if(count($query)>0){
+			foreach($query as $v){
+				$tmpQ = explode(':',$v);
+				if(count($tmpQ)!=2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'query syntax error';
+					return $ret;
+				}else{
+					$queryArr[$tmpQ[0]] = $tmpQ[1];
+				}
+
+			}
+		}
+		//获取order by 信息
+		if(!isset($_GET['ob'])){
+			$order = array();
+		}else{
+			$orderStr = $_GET['ob'];
+			$order = explode(' ', $orderStr);
+		}
+		//获取翻页信息
+		if(!isset($_GET['p']))
+			$page = 1;
+		else
+			$page = $_GET['p'];
+		if(!isset($_GET['pl']))
+			$pageLength = 20;
+		else
+			$pageLength = $_GET['pl'];
+		$conf =  SConfig::getConfig(ROOT_CONFIG."/const.conf","seek");
+		$address = $conf->seek_ip;
+		$port = intval($conf->seek_port);
+		$cl = new SphinxClient();
+		$cl->SetServer ( $address, $port);
+		$cl->ResetFilters();
+		$cl->ResetGroupBy();
+		$cl->SetArrayResult(true);
+		$cl->SetMatchMode ( $mode=SPH_MATCH_EXTENDED );
+		//设置order by
+		if(count($order) > 0){
+			$orderStr = '';
+			foreach($order as $v){
+				$tmpOrd = explode(':',$v);
+				if(count($tmpOrd)!=2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'order by syntax error';
+					return $ret;
+				}else{
+					$orderStr .= $this->attrs[$tmpOrd[0]].' '.$tmpOrd[1].',';
+				}
+			}
+			$orderStr = substr($orderStr,0,-1);
+// error_log("hugeorderStr是".var_export($orderStr,true)."\n", 3, "/tmp/fanlog.log_");
+			$cl->SetSortMode (SPH_SORT_EXTENDED ,$orderStr);
+		}else{
+			$cl->SetSortMode (SPH_SORT_EXTENDED ,"create_time desc");
+		}
+		//设置attr query
+		$queriesStr= '';
+		if(count($queryArr)>0){
+			if(isset($queryArr['course_id'])){
+				$qArr = explode(',', $queryArr['course_id']);
+				$cl->setFilter($tmpAttrs['course_id'], $qArr);	
+			}
+			if(isset($queryArr['cate_id'])){
+				$qArr = explode(',', $queryArr['cate_id']);
+				$cl->setFilter($tmpAttrs['cate_id'], $qArr);	
+			}
+			if(isset($queryArr['recomm_weight'])){
+				$qArr = explode(',', $queryArr['recomm_weight']);
+				$cl->setFilter($tmpAttrs['recomm_weight'], $qArr);	
+			}
+			if(isset($queryArr['top'])){
+				$qArr = explode(',', $queryArr['top']);
+				$cl->setFilter($tmpAttrs['top'], $qArr);	
+			}
+			if(isset($queryArr['course_type'])){
+				$qArr = explode(',', $queryArr['course_type']);
+				$cl->setFilter($tmpAttrs['course_type'], $qArr);	
+			}
+			if(isset($queryArr['grade_id'])){
+				$qArr = explode(',', $queryArr['grade_id']);
+				$cl->setFilter($tmpAttrs['grade_id'], $qArr);	
+			}
+			if(isset($queryArr['user_id'])){
+				$qArr = explode(',', $queryArr['user_id']);
+				$cl->setFilter($tmpAttrs['user_id'], $qArr);	
+			}
+			if(isset($queryArr['public_type'])){
+				$qArr = explode(',', $queryArr['public_type']);
+				$cl->setFilter($tmpAttrs['public_type'], $qArr);	
+			}
+			if(isset($queryArr['fee_type'])){
+				$qArr = explode(',', $queryArr['fee_type']);
+				$cl->setFilter($tmpAttrs['fee_type'], $qArr);	
+			}
+			if(isset($queryArr['max_user'])){
+				$qArr = explode(',', $queryArr['max_user']);
+				$cl->setFilter($tmpAttrs['max_user'], $qArr);	
+			}
+			if(isset($queryArr['min_user'])){
+				$qArr = explode(',', $queryArr['min_user']);
+				$cl->setFilter($tmpAttrs['min_user'], $qArr);	
+			}
+			if(isset($queryArr['user_total'])){
+				$qArr = explode(',', $queryArr['user_total']);
+				$cl->setFilter($tmpAttrs['user_total'], $qArr);	
+			}
+			if(isset($queryArr['status'])){
+				$qArr = explode(',', $queryArr['status']);
+				$cl->setFilter($tmpAttrs['status'], $qArr);	
+			}
+			if(isset($queryArr['admin_status'])){
+				$qArr = explode(',', $queryArr['admin_status']);
+				$cl->setFilter($tmpAttrs['admin_status'], $qArr);	
+			}
+			if(isset($queryArr['system_status'])){
+				$qArr = explode(',', $queryArr['system_status']);
+				$cl->setFilter($tmpAttrs['system_status'], $qArr);	
+			}
+			if(isset($queryArr['class_id'])){
+				$qArr = explode(',', $queryArr['class_id']);
+				$cl->setFilter($tmpAttrs['class_id'], $qArr);	
+			}
+			if(isset($queryArr['section_id'])){
+				$qArr = explode(',', $queryArr['section_id']);
+				$cl->setFilter($tmpAttrs['section_id'], $qArr);	
+			}
+			if(isset($queryArr['start_time'])){
+				$qArr = explode(',', $queryArr['start_time']);
+				if(count($qArr)<>2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'start_time syntax error';
+					return $ret;
+				}
+				$tmpBegin = strtotime($qArr[0]);
+				$tmpEnd = strtotime($qArr[1]);
+				if(FALSE === $tmpBegin || FALSE === $tmpEnd){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'start_time syntax error';
+					return $ret;
+				}
+				$cl->setFilterRange($tmpAttrs['start_time'], $tmpBegin, $tmpEnd);	
+			}
+			if(isset($queryArr['end_time'])){
+				$qArr = explode(',', $queryArr['end_time']);
+				if(count($qArr)<>2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'end_time syntax error';
+					return $ret;
+				}
+				$tmpBegin = strtotime($qArr[0]);
+				$tmpEnd = strtotime($qArr[1]);
+				if(FALSE === $tmpBegin || FALSE === $tmpEnd){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'end_time syntax error';
+					return $ret;
+				}
+				$cl->setFilterRange($tmpAttrs['end_time'], $tmpBegin, $tmpEnd);	
+			}
+			if(isset($queryArr['create_time'])){
+				$qArr = explode(',', $queryArr['create_time']);
+				if(count($qArr)<>2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'create_time syntax error';
+					return $ret;
+				}
+				$tmpBegin = strtotime($qArr[0]);
+				$tmpEnd = strtotime($qArr[1]);
+				if(FALSE === $tmpBegin || FALSE === $tmpEnd){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'create_time syntax error';
+					return $ret;
+				}
+				$cl->setFilterRange($tmpAttrs['create_time'], $tmpBegin, $tmpEnd);	
+			}
+			if(isset($queryArr['last_updated'])){
+				$qArr = explode(',', $queryArr['last_updated']);
+				if(count($qArr)<>2){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'last_updated syntax error';
+					return $ret;
+				}
+				$tmpBegin = strtotime($qArr[0]);
+				$tmpEnd = strtotime($qArr[1]);
+				if(FALSE === $tmpBegin || FALSE === $tmpEnd){
+					$ret['error'] = 1;
+					$ret['error_desc'] = 'last_updated syntax error';
+					return $ret;
+				}
+				$cl->setFilterRange($tmpAttrs['last_updated'], $tmpBegin, $tmpEnd);	
+			}
+			if(isset($queryArr['price'])){
+				$qArr = explode(',', $queryArr['price']);
+				if(count($qArr)<>2){
+					$cl->setFilter($tmpAttrs['price'], $qArr); 
+				}else{
+					$cl->setFilterRange($tmpAttrs['price'], $qArr[0], $qArr[1]);	
+				}
+			}
+			if(isset($queryArr['market_price'])){
+				$qArr = explode(',', $queryArr['market_price']);
+				if(count($qArr)<>2){
+					$cl->setFilter($tmpAttrs['market_price'], $qArr); 
+				}else{
+					$cl->setFilterRange($tmpAttrs['market_price'], $qArr[0], $qArr[1]);	
+				}
+			}
+			if(isset($queryArr['title'])){
+				$queriesStr .=" @title ".$queryArr['title'];
+			}
+			if(isset($queryArr['user_name'])){
+				$queriesStr .=" @user_name ".$queryArr['user_name'];
+			}
+			if(isset($queryArr['tags'])){
+				$queriesStr .=" @tags ".$queryArr['tags'];
+			}
+			if(isset($queryArr['desc'])){
+				$queriesStr .=" @descript ".$queryArr['desc'];
+			}
+		}
+		//设置page
+		$beginOff = ($page-1)*$pageLength;
+		$cl->setLimits(intval($beginOff), intval($pageLength));
+		//设置string query
+		$res = $cl->Query($queriesStr,"course");
+		var_dump($res);
+		//get matches
+		$data = array();
+		if(isset($res['matches']) && count($res['matches']) > 0){
+			//check that if need to select from db 
+			$classes = $sections = array();
+			$tmpIdArr = array();
+			if(in_array('class', $field)){
+				foreach($res['matches'] as $id=>$val){
+					$tmpArr = $val['attrs']['class_id'];
+					if( count($tmpArr) > 0 ){
+						foreach($tmpArr as $classId){
+							$tmpIdArr[$classId] = 0;
+						}
+					}
+				}
+				$classIdStr = implode(',', array_keys($tmpIdArr));
+				$dbCourse = new course_db;
+				$classList = $dbCourse->listClasses($classIdStr);
+				foreach($classList->items as $val){
+					$tmpCla['class_id'] = $val['pk_class'];
+					$tmpCla['class_admin_id'] = $val['fk_user_class'];
+					$tmpCla['name'] = $val['name'];
+					$tmpCla['desc'] = $val['descript'];
+					$tmpCla['type'] = $val['type'];
+					$tmpCla['max_user'] = $val['max_user'];
+					$tmpCla['min_user'] = $val['min_user'];
+					$tmpCla['user_total'] = $val['user_total'];
+					$tmpCla['status'] = $val['status'];
+					$classes[$val['fk_course']][] = $tmpCla;
+				}
+			}
+			$tmpIdArr = array();
+			if(in_array('section', $field)){
+				foreach($res['matches'] as $id=>$val){
+					$tmpArr = $val['attrs']['section_id'];
+					if( count($tmpArr) > 0 ){
+						foreach($tmpArr as $sectionId){
+							$tmpIdArr[$sectionId] = 0;
+						}
+					}
+				}
+				$sectionIdStr = implode(',', array_keys($tmpIdArr));
+				$dbCourse = new course_db;
+				$sectionList = $dbCourse->listSections($sectionIdStr);
+				foreach($sectionList->items as $val){
+					$tmpSec['section_id'] = $val['pk_section'];
+					$tmpSec['name'] = $val['name'];
+					$tmpSec['desc'] = $val['descript'];
+					$tmpSec['order'] = $val['order_no'];
+					$tmpSec['status'] = $val['status'];
+					$sections[$val['fk_course']][] = $tmpSec;
+				}
+			}
+			$i = 0;
+			foreach($res['matches'] as $id=>$val){
+				foreach($field as $k){
+					if(isset($timesArr[$k])){
+						$data[$i][$k] = date('Y-m-d h:i:s', $val['attrs'][$tmpAttrs[$k]]);	
+					}else if($k === 'class'){
+						if(isset($classes[$val['attrs']['pk_course']]))
+							$data[$i][$k] = $classes[$val['attrs']['pk_course']];
+						else 
+							$data[$i][$k] = array();
+					}elseif($k==='section'){
+						if(isset($sections[$val['attrs']['pk_course']]))
+							$data[$i][$k] = $sections[$val['attrs']['pk_course']];
+						else
+							$data[$i][$k] = array();
+					}else{
+						$data[$i][$k] = $val['attrs'][$tmpAttrs[$k]];
+					}
+				}
+				$i++;
+			}
+		}
+		$ret = array();
+		$ret['data'] = $data;
+		$ret['total'] = $res['total'];
+		$ret['page'] = $page;
+		$ret['pagelength'] = $pageLength;
+		//$ret['total_found'] = $res['total_found'];
+		$ret['time'] = $res['time'];
+		return $ret;
+	}
+	public function pageGenerate($inPath){
+    	echo '<?xml version="1.0" encoding="utf-8"?>
+	    <sphinx:docset>
+		<sphinx:schema>
+		<sphinx:field name="title"/>
+		<sphinx:field name="user_name"/>
+		<sphinx:field name="tags"/>
+		<sphinx:field name="descript"/>
+		<sphinx:attr name="thumb_big" type="string"/>
+		<sphinx:attr name="thumb_med" type="string"/>
+		<sphinx:attr name="thumb_small" type="string"/>
+		<sphinx:attr name="descript" type="string"/>
+		<sphinx:attr name="title" type="string"/>
+		<sphinx:attr name="tags" type="string"/>
+		<sphinx:attr name="user_name" type="string"/>
+		<sphinx:attr name="user_thumb_big" type="string"/>
+		<sphinx:attr name="user_thumb_med" type="string"/>
+		<sphinx:attr name="user_thumb_small" type="string"/>
+		<sphinx:attr name="pk_course" type="int"/>
+		<sphinx:attr name="fk_cate" type="int"/>
+		<sphinx:attr name="sort" type="int"/>
+		<sphinx:attr name="top" type="int"/>
+		<sphinx:attr name="fk_type" type="int"/>
+		<sphinx:attr name="fk_grade" type="int"/>
+		<sphinx:attr name="fk_user" type="int"/>
+		<sphinx:attr name="public_type" type="int"/>
+		<sphinx:attr name="fee_type" type="int"/>
+		<sphinx:attr name="max_user" type="int"/>
+		<sphinx:attr name="min_user" type="int"/>
+		<sphinx:attr name="user_total" type="int"/>
+		<sphinx:attr name="status" type="int"/>
+		<sphinx:attr name="admin_status" type="int"/>
+		<sphinx:attr name="system_status" type="int"/>
+		<sphinx:attr name="price" type="int"/>
+		<sphinx:attr name="price_market" type="int"/>
+		<sphinx:attr name="start_time" type="timestamp"/>
+		<sphinx:attr name="end_time" type="timestamp"/>
+		<sphinx:attr name="create_time" type="timestamp"/>
+		<sphinx:attr name="last_updated" type="timestamp"/>
+		<sphinx:attr name="class_id" type="multi"/>
+		<sphinx:attr name="section_id" type="multi"/>
+		</sphinx:schema>';
+		
+		$dbCourse = new course_db;
+		$conf =  SConfig::getConfig(ROOT_CONFIG."/const.conf","seek");
+		$pageLength = $conf->seek_length;
+		$startCourseId = 1;
+		$courseList = $dbCourse->courselist(1,$pageLength,null,null,null,null,false,false,true,$startCourseId);
+		$totalPage = $courseList->totalPage;
+		$timesArr = $this->timesArr;
+		for($page=1;$page<=$totalPage;$page++){
+			$courseList = $dbCourse->courselist($page,$pageLength,null,null,null,null,false,false,true,$startCourseId);
+			$userIdArr = $courseIdArr = array();
+			foreach($courseList->items as $k=>$v){
+				$userIdArr[$v['fk_user']] = 0;
+				$courseIdArr[] = $v['pk_course'];
+			}
+			$userIdStr = implode(',', array_keys($userIdArr));
+			$courseIdStr = implode(',', $courseIdArr);
+			//get user info 
+			$dbUser = new user_db;
+			$userList = $dbUser-> listUsersByUserIds( $userIdStr );
+			$userData = array();
+			foreach($userList->items as $user){
+				$userData[$user['pk_user']]['user_id'] = $user['pk_user'];
+				$userData[$user['pk_user']]['user_name'] = $user['name'];
+				$userData[$user['pk_user']]['user_thumb_big'] = $user['thumb_big'];
+				$userData[$user['pk_user']]['user_thumb_med'] = $user['thumb_med'];
+				$userData[$user['pk_user']]['user_thumb_small'] = $user['thumb_small'];
+			}
+			//get fee info
+			$feeList = $dbCourse->listFeesByCourseIds( $courseIdStr);
+			$feeData = array();
+			if(isset($feeList->items) && count($feeList->items)>0){
+				foreach($feeList->items as $fee){
+					$feeData[$fee['fk_course']]['price'] = $fee['price'];
+					$feeData[$fee['fk_course']]['price_market'] = $fee['price_market'];
+				}		
+			}
+			//get class info
+			$classList = $dbCourse->listClassesByCourseIds( $courseIdStr );
+			$classData = array();
+			foreach($classList->items as $class){
+				$classData[$class['fk_course']][] = $class['pk_class'];
+			}			
+			//get section info
+			$sectionList = $dbCourse->listSectionsByCourseIds( $courseIdStr );
+			$sectionData = array();
+			foreach($sectionList->items as $section){
+				$sectionData[$section['fk_course']][] = $section['pk_section'];
+			}			
+			foreach($courseList->items as $course ){
+				$startCousrseId = $course['pk_course'];
+				echo '<sphinx:document id="'.$course['pk_course'].'">'."\n";
+				$course['user_name'] =  $userData[$course['fk_user']]['user_name'];
+				$course['user_thumb_big'] =  $userData[$course['fk_user']]['user_thumb_big'];
+				$course['user_thumb_med'] =  $userData[$course['fk_user']]['user_thumb_med'];
+				$course['user_thumb_small'] =  $userData[$course['fk_user']]['user_thumb_small'];
+				if(isset($classData[$course['pk_course']]))
+					$course['class_id'] = $classData[$course['pk_course']];
+				else
+					$course['class_id'] = array();
+				if(isset($sectionData[$course['pk_course']]))
+					$course['section_id'] = $sectionData[$course['pk_course']];
+				else
+					$course['section_id'] = array();
+				//set fee data
+				if(isset($feeData[$course['pk_course']])){
+					$course['price'] = $feeData[$course['pk_course']]['price'];
+					$course['price_market'] = $feeData[$course['pk_course']]['price_market'];
+				}else{
+					$course['price'] = 0;
+					$course['price_market'] = 0;
+				}
+				foreach($course as $k=>$v){
+					if(isset($timesArr[$k]))
+						$v = strtotime($v);
+					echo "\t<$k>";
+					if(is_numeric($v)){
+						echo $v;
+					}elseif(is_array($v)){
+						echo implode(',', $v);
+					}else{
+						echo "<![CDATA[$v]]>";
+					}
+					echo "</$k>\n";
+				}
+				echo "</sphinx:document>\n\n";
+			}
+		}	
+		echo '</sphinx:docset>';
+	}
+}
+

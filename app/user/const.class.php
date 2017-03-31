@@ -1,0 +1,16 @@
+<?php
+class user_const{
+	const SOURCE_QQ 		= 1;
+	const SOURCE_WEIXIN 	= 2;
+	const SOURCE_WEIBO 		= 3;
+	const SOURCE_ALIPAY 	= 4;
+	const TYPE_USER 		= 0x00000001;//用户
+	const TYPE_TEACHER	 	= 0x00000002;//教师
+	const TYPE_ORG 			= 0x00000004;//机构
+	const VERIFY_INNER		= 0x00000001;
+	const VERIFY_PARTERNER	= 0x00000002;
+	const VERIFY_MOBILE		= 0x00010000;
+	const VERIFY_EMAIL		= 0x00020000;
+	const ENABLED	=	1;
+	const DISABLED	=	2;
+}

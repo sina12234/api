@@ -1,0 +1,1490 @@
+<?php
+/**
+ * @author hetao fanbin
+ */
+class course_db{
+	public static function InitDB($dbname="db_course",$dbtype="main") {
+		redis_api::useConfig($dbname);
+		$db = new SDb();
+		$db->useConfig($dbname, $dbtype);
+		return $db;
+	}
+	public function addcourse($course){
+		$db = self::InitDB();
+		return $db->insert("t_course",$course);
+	}
+	public function getCourse($course_id){
+        $db = self::InitDB("db_course","query");
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::get($key);
+		if($v){return $v;}
+
+		$condition = array();
+		$condition = array("status <> -1");
+		$condition["pk_course"] = $course_id;
+		$v = $db->selectOne("t_course",$condition);
+		redis_api::set($key,$v,60);
+		return $v;
+	}
+	public function getMaxCourseIdByUid($uid){
+        $db = self::InitDB("db_course","query");
+		$row = $db->selectOne("t_course",array("fk_user"=>$uid),"max(pk_course) as course_id");
+		if($row===false){
+			return $row;
+		}
+		if(empty($row['course_id'])){
+			return 0;
+		}
+		return $row['course_id'];
+	}
+
+	public function getMaxClassIdByCid($course_id){
+        $db = self::InitDB("db_course","query");
+		$row = $db->selectOne("t_course_class",array("fk_course"=>$course_id),"max(pk_class) as class_id");
+		if($row===false){
+			return $row;
+		}
+		if(empty($row['class_id'])){
+			return 0;
+		}
+		return $row['class_id'];
+	}
+    //设置课程排序
+    public function setCourseSort($sort_array){
+        $db = self::InitDB("db_course");
+        return $db->insert("t_sort",$sort_array,true);
+    }
+	/**
+	 * 修改课程
+	 * 语法 update($table,$condition="",$item="");
+	 */
+	public function updateCourse($course_id,$Course){
+        $db = self::InitDB("db_course");
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::del($key);
+		$key ="course_api::getcourselist.{$course_id}";
+		$v = redis_api::del($key);
+		$key_1 =md5( "course_db.t_course_user.ct.".$course_id);
+		//$key_2 =md5( "course_db.t_course_user.ct.".$class_id);
+		redis_api::del($key_1);
+		//redis_api::del($key_2);
+		return $db->update("t_course",array("pk_course"=>$course_id),$Course);	
+	}
+	public function updateCourseStatus($course_id,$status){
+        $db = self::InitDB("db_course");
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::del($key);
+		$key ="course_api::getcourselist.{$course_id}";
+		$v = redis_api::del($key);
+		$condition = array("pk_course"=>$course_id);
+		return $db->update("t_course",$condition,array("status"=>$status));
+	}
+	public function updateCourseAdminStatus($course_id,$status){
+        $db = self::InitDB("db_course");
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::del($key);
+		$key ="course_api::getcourselist.{$course_id}";
+		$v = redis_api::del($key);
+		$condition = array("pk_course"=>$course_id);
+		return $db->update("t_course",$condition,array("admin_status"=>$status));
+	}
+	public function courseList($page = 1,$length = 4,$fee = null,$oid = null,$grade_id = null,$status=null,$week=false,$shelf=false, $key_all = false, $begin_id = null ){
+//define('DEBUG',true);
+		$condition = array();
+		if($fee == "fee"){
+			$condition = array("fee_type <> 0");
+		}elseif($fee == "free"){
+			$condition = array("fee_type = 0");
+		}
+		if($week){
+			$time = date('Y-m-d',time());
+			$time1 = date('Y-m-d',time()+86400*30);
+			//$condition[] = "start_time >CURDATE()";
+			$condition[] = "start_time >\"$time\"";
+			$condition[] = "start_time <\"$time1\"";
+		}
+		if($oid){
+			$condition["fk_user"]=$oid;
+		}
+		if($shelf != false ){
+			$condition['admin_status']= $shelf;
+			if($status){
+				$condition['status']=$status;
+			}else{
+				$condition[] = 'status>0';
+			}
+		}
+		if($grade_id){
+		$condition["fk_grade"] = $grade_id;
+		}
+		$item = array("t_sort.sort","pk_course","fk_cate","fk_type","fk_grade","fk_user",
+					  "title","tags","descript","thumb_big","thumb_med","thumb_small",
+ 					  "t_course.start_time","t_course.end_time","public_type","fee_type",
+					  "user_total","max_user","min_user","status","top","admin_status","system_status",
+					  "admin_status","price","price_market",
+					  "t_course.last_updated","t_course.create_time");
+		if($week){
+		$orderby = array("t_course.start_time"=>"asc");
+		}else{
+		$orderby = array("top"=>"desc");
+		}
+		$left=new stdclass;
+		$left->t_sort="t_sort.fk_course=t_course.pk_course";
+		$left->t_fee="t_fee.fk_course=t_course.pk_course";
+        $db = self::InitDB("db_course","query");
+		$db->setPage($page);
+		$db->setLimit($length);
+		if($key_all == true ){
+			$condition = array("pk_course > $begin_id");
+			$orderby = array( "pk_course"=>"asc" );
+		}
+		return $db->select("t_course",$condition,$item,"",$orderby,$left);
+	}
+	public function cateList(){
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_category","",array("pk_cate","name","last_updated"),"","","");	
+	}
+	public function gradeList(){
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_grade","",array("pk_grade","name","last_updated"),"","","");	
+	}
+	public function addSection($section){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_section",$section);
+	}
+/*	public function delSection($sid,$cid){
+		$condition = array("pk_section"=>$sid,"fk_course"=>$cid);
+		return $this->_db->delete("t_course_section",$condition);
+	}
+*/
+	public function delSection($sid,$cid){
+        $db = self::InitDB("db_course");
+		$condition = array("pk_section"=>$sid,"fk_course"=>$cid);
+		return $db->update("t_course_section",$condition,array("status"=>"-1"));	
+	}
+	public function updateSection($section_id,$section){
+        $db = self::InitDB("db_course");
+		return $db->update("t_course_section",array("pk_section"=>$section_id),$section);	
+	}
+	public function updateSectionStatus($section_id,$status){
+        $db = self::InitDB("db_course");
+		$condition = array("pk_section"=>$section_id);
+		return $db->update("t_course_section",$condition,array("status"=>$status));
+	}
+	/*
+	 *获取单个章节
+	 */
+	public function getSection($sid){
+		$item=new stdclass;
+		$item->section_id="pk_section";
+		$item->course_id = "fk_course";
+		$item->name = "name";
+		$item->last_updated= "last_updated";
+		$item->descript= "descript";
+		$item->status ="status";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_section",array("pk_section"=>$sid),$item);
+	}
+	/*
+	 *获取多个章节
+	 */
+	public function sectionList($course_id){
+        $db = self::InitDB("db_course","query");
+		$condition = array();
+		$condition = array("status <> -1");
+		$condition["fk_course"]= $course_id;
+		return $db->select("t_course_section",$condition,array("pk_section","fk_course","name","last_updated","descript","create_time","order_no","status"),"",array("pk_section"=>"asc"),"");	
+	}
+	public function addClass($class){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_class",$class);
+	}
+	public function getClass($class_id){
+        $db = self::InitDB("db_course","query");
+		//获取课程里的班级
+		$key =md5( "course_db.t_course_class.id.".$class_id);
+		$v = redis_api::get($key);
+		if($v!==false)return $v;
+
+		$v = $db->selectOne("t_course_class",array("pk_class"=>$class_id));
+		redis_api::set($key,$v,120);
+		return $v;
+	}
+	public function getClassindex($course_id){
+        $db = self::InitDB("db_course","query");
+		//获取课程里的班级
+		$key =md5( "course_db.t_course_class_course.id.".$course_id);
+		$v = redis_api::get($key);
+		if($v!==false)return $v;
+
+		$v = $db->selectOne("t_course_class",array("fk_course"=>$course_id),array("pk_class","name","fk_user_class"),array("pk_class=>asc"));
+		redis_api::set($key,$v,120);
+		return $v;
+	}
+    //获取课程排序信息
+    public function getSort($course_id){
+        $db = self::InitDB("db_course","query");
+		$key =md5( "course_db.t_sort.".$course_id);
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+        $v = $db->selectOne("t_sort",array("fk_course"=>$course_id));
+		if(!$v)$v=0;
+		redis_api::set($key,$v,120);
+		return $v;
+    }
+	public function updateClass($class_id,$class){
+        $db = self::InitDB("db_course");
+		//获取课程里的班级
+		$class_old = self::getClass($class_id);
+		if(empty($class_old['fk_course']))return false;
+		$course_id = $class_old['fk_course'];
+		$key =md5( "course_db.t_course_class.".$course_id);
+		redis_api::del($key);
+		$key =md5( "course_db.t_course_class.id.".$class_id);
+		redis_api::del($key);
+		//$key_1 =md5( "course_db.t_course_user.ct.".$course_id);
+		$key_2 =md5( "course_db.t_course_user.ct.".$class_id);
+		//redis_api::del($key_1);
+		redis_api::del($key_2);
+
+		return $db->update("t_course_class",array("pk_class"=>$class_id),$class);	
+	}
+	public function updateClassStatus($class_id,$status){
+        $db = self::InitDB("db_course");
+		//获取课程里的班级
+		$class_old = self::getClass($class_id);
+		if(empty($class_old['fk_course']))return false;
+		$course_id = $class_old['fk_course'];
+		$key =md5( "course_db.t_course_class.".$course_id);
+		redis_api::del($key);
+		$key =md5( "course_db.t_course_class.id.".$class_id);
+		redis_api::del($key);
+
+		$condition = array("pk_class"=>$class_id);
+		return $db->update("t_course_class",$condition,array("status"=>$status));
+	}
+	public function delClass($class_id){
+        $db = self::InitDB("db_course");
+		//获取课程里的班级
+		//获取课程里的班级
+		$class_old = self::getClass($class_id);
+		if(empty($class_old['fk_course']))return false;
+		$course_id = $class_old['fk_course'];
+		$key =md5( "course_db.t_course_class.".$course_id);
+		redis_api::del($key);
+		$key =md5( "course_db.t_course_class.id.".$class_id);
+		redis_api::del($key);
+
+		$condition = array("pk_class"=>$class_id);
+		return $db->update("t_course_class",$condition,array("status"=>"-1"));
+	}
+	public function classList($course_id){
+        $db = self::InitDB("db_course","query");
+		//获取课程里的班级
+		$key =md5( "course_db.t_course_class.".$course_id);
+		$keyHash =md5("content");
+		$v = redis_api::hGet($key,$keyHash);
+		if($v!==false)return $v;
+
+		$condition = array();
+		$condition = array("status <> -1");
+		$condition["fk_course"] = $course_id;
+		$item = array("pk_class","fk_course","fk_user_class","name","descript","type","status","user_total","max_user","min_user","last_updated","create_time");
+		$v = $db->select("t_course_class",$condition,$item,"",array("pk_class"=>"asc"),"");	
+		redis_api::hset($key,$keyHash,$v);
+		return $v;
+	}
+	public function listClasses($classIdsStr){
+		$condition = array();
+		$condition = array("pk_class in ( $classIdsStr)");
+		$item = array("pk_class","fk_course","fk_user_class","name","descript","type","status","user_total","max_user","min_user","last_updated","create_time");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_class",$condition,$item,"","","");	
+	}
+	public function listSections($sectionIdsStr){
+		$condition = array();
+		$condition = array("pk_section in ( $sectionIdsStr)");
+		$item = array("pk_section","fk_course","name","descript","order_no","status","last_updated","create_time");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_section",$condition,$item,"","","");	
+	}
+	//for sphinx indexing course
+	public function listClassesByCourseIds( $idsStr ){
+		$condition = array("fk_course in ( $idsStr )","status <> -1");
+		$item= array("pk_class","fk_course");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_class",$condition,$item,"",array("pk_class"=>"asc"),"");
+	}
+	//for sphinx indexing course
+	public function listSectionsByCourseIds( $idsStr ){
+		$condition = array("fk_course in ( $idsStr )","status <> -1");
+		$item= array("pk_section","fk_course");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_section",$condition,$item,"",array("pk_section"=>"asc"),"");
+	}
+	//for sphinx indexing course
+	public function listFeesByCourseIds( $idsStr ){
+		$condition = array("fk_course in ( $idsStr )");
+		$item= array("fk_course","price","price_market");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_fee",$condition,$item,"","","");
+	}
+	public function addPlan($Plan){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_plan",$Plan);
+	}
+	public function updatePlan($cid,$sid,$class_id,$Plan){
+		$condition = array("fk_class"=>$class_id,"fk_course"=>$cid,"fk_section"=>$sid);
+        $db = self::InitDB("db_course");
+		return $db->update("t_course_plan",$condition,$Plan);
+	}
+	public function delPlan($cid = null,$class_id =null,$sid = null){
+		if($sid){
+			$condition = array("fk_section"=>$sid);
+		}
+		if($cid && $class_id){
+			$condition = array("fk_course"=>$cid,"fk_class"=>$class_id);
+		}
+		if($cid && $sid){
+			$condition = array("fk_course"=>$cid,"fk_section"=>$sid);
+		}
+        $db = self::InitDB("db_course");
+		return $db->update("t_course_plan",$condition,array("status"=>"-1"));
+	}
+	public function updatePlanStatus($plan_id,$status){
+        $db = self::InitDB("db_course");
+		$key =md5( "db_course.plan.".$plan_id);
+		redis_api::del($key);
+		$condition = array("pk_plan"=>$plan_id);
+		return $db->update("t_course_plan",$condition,array("status"=>$status));
+	}
+	public function planList($course_id=0 ,$orgUserId=0, $class_id=0 ,$user_plan_id=0 ,$section_id=0 ,$plan_id=0,$week=false,$allCourse=true,$order_by="desc",$page = null,$length = null){
+        $db = self::InitDB("db_course","query");
+		$condition = array();
+		$condition = array("t_course_plan.status <> -1");
+		if($course_id){
+			$condition["pk_course"] = $course_id;
+		}
+		if($orgUserId){
+			$condition["t_course_plan.fk_user"] = $orgUserId;
+		}
+		if($class_id){
+			$condition['pk_class'] = $class_id;
+		}
+		if($user_plan_id){
+			$condition['fk_user_plan'] = $user_plan_id;
+		}
+		if($section_id){
+			$condition['pk_section'] = $section_id;
+		}
+		if($plan_id){
+			$condition['pk_plan'] = $plan_id;
+		}
+		if($week){
+			$time = date('Y-m-d',strtotime(date("Y-m-d")));
+			$time1 = date('Y-m-d',time()+86400*30);
+			$condition[] = "t_course_plan.start_time >\"$time\"";
+			$condition[] = "t_course_plan.start_time <\"$time1\"";
+		}
+
+		$item = array("plan_id"=>"pk_plan",
+					  "t_course_plan.fk_user as user_id","user_plan_id"=>"fk_user_plan","course_id"=>"pk_course","t_course.pk_course",
+					  "section_id"=>"pk_section","class_id"=>"pk_class",
+					  "fk_user_class",//班主任
+					  "fk_user_plan",//上课老师
+
+					  "user_total_class"=>"t_course_class.user_total",//上
+					  "max_user_class"=>"t_course_class.max_user",//
+					  "section_descipt"=>"t_course_section.descript",//
+
+					  "user_total_course"=>"t_course.user_total",//上
+					  "max_user_course"=>"t_course.max_user",//
+
+					  "fk_user_course"=>"t_course.fk_user",//
+ 					  "t_course_plan.start_time","t_course_plan.end_time",
+					 // "user_total", "max_user","min_user","status","system_status",
+					  "t_course_plan.live_public_type",
+					  "t_course_plan.video_public_type",
+					  "t_course_plan.video_trial_time",
+					  "status"		=>"t_course_plan.status",
+					  "plan_status"		=>"t_course_plan.status",
+					  "course_status"	=>"t_course.status",
+					  "section_status"	=>"t_course_section.status",
+					  "t_course_plan.last_updated",
+					  "t_course_plan.create_time",
+					  "t_course.status course_status",
+					  "t_course.title",
+					  "t_course.thumb_small",
+					  "t_fee.price",
+					  "t_fee.price_market",
+					  "t_course.admin_status",
+					  "t_course.fee_type",
+					  "t_course_section.name section_name",
+					  "t_course_class.name class_name",
+				  );
+		if($week){
+			$orderby = array("t_course_plan.start_time"=>"asc");
+		}else{
+			$orderby = array("pk_plan"=>$order_by,);
+		}
+		$left=new stdclass;
+		$left->t_fee="t_fee.fk_course =t_course_plan.fk_course";
+		//$left->t_course_class="t_course_class.pk_class=t_course_plan.fk_class";
+		//$left->t_course_section="t_course_section.pk_section=t_course_plan.fk_section";
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$table = array("t_course_plan","t_course","t_course_section","t_course_class");
+		if(!$allCourse){
+			$condition[] = "t_course.admin_status = 1"; 
+		}
+		$condition[] = "t_course_plan.fk_course =t_course.pk_course";
+		$condition[] = "t_course_plan.fk_section=t_course_section.pk_section";
+		$condition[] = "t_course_plan.fk_class=t_course_class.pk_class";
+		return $db->select($table,$condition,$item,"",$orderby,$left);
+	}
+	public function planCourseGroup($user_plan_id=0,$order_by="desc",$page = null,$length = null){
+        $db = self::InitDB("db_course","query");
+		$condition = array();
+		$condition = array("status <> -1");
+		if($user_plan_id){
+			$condition['fk_user_plan'] = $user_plan_id;//讲课老师
+		//	$condition['fk_user'] = $user_plan_id; //班主任
+		}
+	
+		$group = array("fk_course");
+		$item = array(//"count(pk_plan)",
+					  //"fk_user","fk_user_plan",
+					  "course_id"=>"fk_course",
+				     //"fk_section","fk_class",
+ 					 // "start_time","end_time",
+					 // "user_total", "max_user","min_user","status","system_status",
+					 // "status",
+					 //"last_updated","create_time"
+						);
+		$orderby = array("pk_plan"=>$order_by,);
+		return $db->select("t_course_plan",$condition,$item,$group,$orderby,"");
+	}
+	public function getPlan($plan_id){
+        $db = self::InitDB("db_course","query");
+		$key =md5( "db_course.plan.".$plan_id);
+		$v = redis_api::get($key);
+		if($v){return $v;}
+		$item=new stdclass;
+		$item->plan_id="pk_plan";
+		$item->user_id = "fk_user";
+		$item->user_plan_id = "fk_user_plan";
+		$item->course_id= "fk_course";
+		$item->section_id= "fk_section";
+		$item->class_id= "fk_class";
+		$item->start_time= "start_time";
+		$item->end_time= "end_time";
+		$item->live_public_type="live_public_type";
+		$item->video_public_type="video_public_type";
+		$item->video_trial_time="video_trial_time";
+		$item->status ="status";
+		$v = $db->selectOne("t_course_plan",array("pk_plan"=>$plan_id),$item);
+		redis_api::set($key,$v,60);
+		return $v;
+	}
+	/*
+	 *	通过联合索引获取Plan
+	 *
+	 */
+	public function getPlanuni($course_id,$section_id,$class_id){
+//define('DEBUG',true);
+		$item=new stdclass;
+		$item->plan_id="pk_plan";
+		$item->user_id = "fk_user";
+		$item->user_plan_id = "fk_user_plan";
+		$item->course_id= "fk_course";
+		$item->section_id= "fk_section";
+		$item->class_id= "fk_class";
+		$item->start_time= "start_time";
+		$item->end_time= "end_time";
+		$item->status ="status";	
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_plan",array("fk_course"=>$course_id,"fk_section"=>$section_id,"fk_class"=>$class_id),$item);
+	}
+	/*获取单个订单信息接口
+	 *通过user_id course_id 来获取 或者通过order_id 来获取
+	 *
+	 *
+	 */
+	public function getFeeOrder($order_id){
+		$condition = array();
+		$condition["pk_order"] = $order_id;
+		$item=new stdclass;
+		$item->order_id= "pk_order";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->price= "price";
+		$item->price_old= "price_old";
+		$item->price_market= "price_market";
+		$item->ext= "ext";
+		$item->status= "status";
+		$item->callback_status= "callback_status";
+		$item->unique_order_id= "unique_order_id";
+		$item->out_trade_id= "out_trade_id";
+		$item->pay_type = "pay_type";
+		$item->expiration_time= "expiration_time";
+		$item->third_order_id= "third_order_id";
+		$item->last_updated= "last_updated";
+		$item->create_time= "create_time";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_fee_order",$condition,$item);
+	}
+	public function getFeeOrderByUqi($order_id){
+		$condition = array();
+		$condition["unique_order_id"] = $order_id;
+		$item=new stdclass;
+		$item->order_id= "pk_order";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->price= "price";
+		$item->price_old= "price_old";
+		$item->price_market= "price_market";
+		$item->ext= "ext";
+		$item->status= "status";
+		$item->callback_status= "callback_status";
+		$item->unique_order_id= "unique_order_id";
+		$item->out_trade_id= "out_trade_id";
+		$item->pay_type = "pay_type";
+		$item->third_order_id= "third_order_id";
+		$item->expiration_time= "expiration_time";
+		$item->last_updated= "last_updated";
+		$item->create_time= "create_time";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_fee_order",$condition,$item);
+	}
+	public function getFeeOrderByOutTradeId($out_trade_id){
+		$condition = array();
+		$condition["out_trade_id"] = $out_trade_id;
+		$item=new stdclass;
+		$item->order_id= "pk_order";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->price= "price";
+		$item->price_old= "price_old";
+		$item->price_market= "price_market";
+		$item->ext= "ext";
+		$item->status= "status";
+		$item->callback_status= "callback_status";
+		$item->unique_order_id= "unique_order_id";
+		$item->out_trade_id= "out_trade_id";
+		$item->pay_type = "pay_type";
+		$item->expiration_time= "expiration_time";
+		$item->third_order_id= "third_order_id";
+		$item->last_updated= "last_updated";
+		$item->create_time= "create_time";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_fee_order",$condition,$item);
+	}
+	public function addFeeOrder($order_info){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_fee_order",$order_info);
+	}
+	/*
+	 *更改订单状态
+	 */
+	public function updateFeeOrderStatus($order_id,$status){
+		$condition = array("pk_order"=>$order_id);
+        $db = self::InitDB("db_course");
+		return $db->update("t_fee_order",$condition,array("status"=>$status));
+	}
+	/*
+	 *更改订单信息
+	 */
+	public function updateFeeOrder($order_id,$order_info){
+        $db = self::InitDB("db_course");
+		return $db->update("t_fee_order",array("pk_order" => $order_id),$order_info);
+	}
+	/*
+	 * 按照user_id 搜素该用户所有订单信息
+	 * 按照order_id 或者user_id course_id 来搜索订单信息
+	 *
+	 */
+	public function listFeeOrder($user_id,$course_id,$fee_order_id,$status = null,$page = null,$length = null){
+		//$condition = array("fee_type <> 0");
+		$array_list = array(
+			"fk_user"=>"user_id",
+			"fk_course"=>"course_id",
+			"pk_order"=>"fee_order_id",
+			"status"=>"status",
+			//		""=>"",
+			//		""=>"",
+			//		""=>"",
+		);
+
+		$condition = array();
+		$condition = array("status <> -1");
+		if($user_id){
+			$condition["fk_user"] = $user_id;
+		}
+		if($course_id){
+			$condition["fk_course"] = $course_id;		
+		}
+		if($fee_order_id){
+			$condition["pk_order"] = $fee_order_id;
+		}
+		if($status){
+			$condition["status"] = $status;
+		}
+		$item=new stdclass;
+		$item->order_id= "pk_order";
+		$item->user_id = "fk_user";
+		$item->course_id = "fk_course";
+		$item->price= "price";
+		$item->price_old= "price_old";
+		$item->price_market= "price_market";
+		$item->ext= "ext";
+		$item->status= "status";
+		$item->callback_status= "callback_status";
+		$item->unique_order_id= "unique_order_id";
+		$item->out_trade_id= "out_trade_id";
+		$item->third_order_id= "third_order_id";
+		$item->expiration_time= "expiration_time";
+		$item->last_updated= "last_updated";
+		$item->create_time= "create_time";
+		if(empty($condition))return false;
+        $db = self::InitDB("db_course","query");
+		if($page){$db->setPage($page);}
+		if($length){$db->setLimit($length);}		
+		$orderby = array("pk_order"=>"desc");
+		return $db->select("t_fee_order",$condition,$item,"",$orderby,"");
+	}
+	public function getFee($course_id){
+		$key =md5( "course_db.t_fee.".$course_id);
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+
+		$condition =array("fk_course" => $course_id);
+        $db = self::InitDB("db_course","query");
+		$fee = $db->selectOne("t_fee",$condition);
+		if(!empty($fee)){
+			$fee['price'] = number_format($fee['price']/100,2,".","");
+			$fee['price_market'] = number_format($fee['price_market']/100,2,".","");
+		}else{
+			$fee=array();
+		}
+		redis_api::set($key,$fee,600);
+		return $fee;
+	}
+	public function setFee($course_id ,$price){
+        $db = self::InitDB("db_course");
+		$key =md5( "course_db.t_fee.".$course_id);
+		$fee = $this->getFee($course_id);
+		if(!empty($fee['pk_fee'])){
+			$v = redis_api::del($key);
+			return $this->updateFee($fee['pk_fee'],$price['price']);
+		}else{
+			$price['price'] = $price['price']*100;
+			$v = redis_api::del($key);
+			return $db->insert("t_fee",$price);
+		}
+		return false;
+	}
+	private function updateFee($pk_fee,$price){
+		$price = $price*100;
+		$price=array("price"=>$price,"price_market"=>$price);
+
+        $db = self::InitDB("db_course");
+		return $db->update("t_fee",array("pk_fee" => $pk_fee),$price);
+	}
+	/*
+	 *学生报名
+	 */
+	public function addRegistration($reg){
+        $db = self::InitDB("db_course");
+		if(is_array($reg)){
+			$course_id = $reg["fk_course"];
+			$class_id = $reg["fk_class"];
+		}else{
+			$course_id = $reg->fk_course;
+			$class_id = $reg->fk_class;
+		}
+		$key_1 =md5( "course_db.t_course_user.ct.".$course_id);
+		$key_2 =md5( "course_db.t_course_user.ct.".$class_id);
+		redis_api::del($key_1);
+		redis_api::del($key_2);
+		return $db->insert("t_course_user",$reg);
+	}
+	/*
+	 *学生报名修改
+	 */
+/*
+	public function updateregistration($reg_id,$reg){
+		$db = self::InitDB("db_course");
+		return $db->insert("t_course_user",$reg);
+	}
+ */
+	/**
+	 * 调班 ,需要修正报名数(原始的课程和班级，修改后的课程和班级)
+	 */
+	public function updateRegClass($course_user_id,$upregdata){
+/*
+	$upregdata = array(
+		"course_id"=>$params->course_id,
+		"class_id"=>$params->class_id,
+ */
+        $db = self::InitDB("db_course");
+		$condition = array("pk_course_user"=>$course_user_id);
+		$updata = array(
+			"fk_class"=>$upregdata["class_id"],
+			"fk_course"=>$upregdata["course_id"],
+		);
+		$key_1 =md5( "course_db.t_course_user.ct.".$upregdata['course_id']);
+		$key_2 =md5( "course_db.t_course_user.ct.".$upregdata['class_id']);
+		$key_3 =md5( "course_db.t_course_user.ct.".$upregdata['old_course_id']);
+		$key_4 =md5( "course_db.t_course_user.ct.".$upregdata['old_class_id']);
+		if($upregdata['course_id']!=$upregdata['old_course_id']){
+			redis_api::del($key_3);
+		}
+		redis_api::del($key_1);
+		redis_api::del($key_2);
+		redis_api::del($key_4);
+		return $db->update("t_course_user",$condition,$updata);
+	}
+	/**
+	 * 获取所有报名用户
+	 */
+	public function listregistration($course_id,$class_id=null,$uid=null,$page = null,$length = null){
+		$condition = array("status"=>1);
+		if($course_id){
+			$condition["fk_course"] = $course_id;
+		}
+		if($class_id){
+			$condition["fk_class"] = $class_id;
+		}
+		if($uid){
+			$condition["fk_user"] = $uid;
+		}
+		if(empty($condition))return false;
+		$item = array("course_user_id"=>"pk_course_user",
+					  "uid"=>"fk_user",
+					  "cid"=>"fk_course",
+					  "class_id"=>"fk_class",
+ 					  "status"=>"status",
+					  "last_updated"=>"last_updated",
+					  "create_time"=>"create_time"
+						);
+		$orderby = array("pk_course_user"=>"desc");
+        $db = self::InitDB("db_course","query");
+		if($page){$db->setpage($page);}
+		if($length){$db->setlimit($length);}		
+		return $db->select("t_course_user",$condition,$item,"",$orderby,"");
+	}
+	/*
+	 *报名临时表view视图
+	public function addRegView($reg_view){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_user_view",$reg_view);
+	}
+	/*
+	 *列取报名临时表view视图
+	 */
+/*
+	public function listRegView($reg_arr,$page = null,$length = null){
+		$condition = array();	
+		$reg_arr;
+//		$course_id =1;
+		if($reg_arr["course_id"]){
+			$condition["fk_course"] = $reg_arr["course_id"];
+		}
+		if($reg_arr["class_id"]){
+			$condition["fk_class"] = $reg_arr["class_id"];
+		}
+		if($reg_arr["uid"]){
+			$condition["fk_user"] = $reg_arr["uid"];
+		}
+		if($reg_arr["user_class_id"]){
+			$condition["fk_user_class"] = $reg_arr["user_class_id"];
+		}
+		if($reg_arr["course_user_id"]){
+			$condition["fk_course_user"] = $reg_arr["course_user_id"];
+		}
+		//if(empty($condition))return false;
+		$item = array("course_user_view_id"=>"pk_course_user_view",
+					  "uid"=>"fk_user",
+					  "cid"=>"fk_course",
+					  "class_id"=>"fk_class",
+					  "user_class_id"=>"fk_user_class",
+					  "course_user_id"=>"fk_course_user",
+ 					  "course_status"=>"course_status",
+ 					  "status"=>"status",
+					  "last_updated"=>"last_updated",
+					  "thumb_big"=>"thumb_big",
+					  "create_time"=>"create_time"
+						);
+		$orderby = array("pk_course_user_view"=>"desc");
+        $db = self::InitDB("db_course","query");
+		if($page){$db->setpage($page);}
+		if($length){$db->setlimit($length);}		
+		return $db->select("t_course_user_view",$condition,$item,"",$orderby,"");
+	}
+*/
+	/*
+	 *修改报名临时表view视图
+	 */
+	public function updateregView($reg_id,$reg){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_user_view",$reg);
+	}
+	public function getClassUser($classId){
+		$key =md5( "course_db.t_course_user.".$classId);
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+
+		$item = new stdclass;
+		$item->user_id = "fk_user";
+		$table = array("t_course_user");
+		$condition = array("fk_class"=>$classId,"status"=>1);
+        $db = self::InitDB("db_course","query");
+		$v = $db->select($table, $condition, $item);
+		redis_api::set($key,$v,120);
+		return $v;
+	}
+	public function getOnClassUser($classId){
+		$key =md5( "course_db.t_course_plan_user.".$classId);
+		$v = redis_api::get($key);
+		if($v){return $v;}
+		$item = new stdclass;
+		$item->user_id = "fk_user";
+		$table = array("t_course_plan_user");
+		$condition = "fk_class=$classId";
+        $db = self::InitDB("db_course","query");
+		$v = $db->select($table, $condition, $item);
+		redis_api::set($key,$v,60);
+		return $v;
+	}
+	public function getRegistration($cid=null,$uid=null){
+		$condition = array("status"=>1);
+		if($cid&&$uid){
+			$condition["fk_course"] = $cid;
+			$condition["fk_user"] = $uid;
+		}else{
+			return false;
+		}
+		$item = array("course_user_id"=>"pk_course_user",
+					  "uid"=>"fk_user",
+					  "cid"=>"fk_course",
+					  "class_id"=>"fk_class",
+ 					  "status"=>"status",
+					  "last_updated"=>"last_updated",
+					  "create_time"=>"create_time"
+						);
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_user",$condition,$item,"","","");
+	}
+	/*
+	 * 根据主键获取报名学生的信息
+	 */
+	public function getRegistrationbyPk($course_user_id=null){
+		$condition = array("status"=>1);
+		if($course_user_id){
+			$condition["pk_course_user"] = $course_user_id;
+		}else{
+			return false;
+		}
+		$item = array("course_user_id"=>"pk_course_user",
+					  "uid"=>"fk_user",
+					  "cid"=>"fk_course",
+					  "class_id"=>"fk_class",
+ 					  "status"=>"status",
+					  "last_updated"=>"last_updated",
+					  "create_time"=>"create_time"
+						);
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_user",$condition,$item,"","","");
+	}
+	/**
+	 * 获取课程或者班级的总人数
+	 */
+	public function getRegistrationCountByCourse($course_id){
+        $db = self::InitDB("db_course","query");
+		$key_1 =md5( "course_db.t_course_user.ct.".$course_id);
+		$v = redis_api::get($key_1);
+		if($v!==false){return $v;}
+
+		$condition = array("status"=>1);
+		$condition["fk_course"] = $course_id;
+		$item = array("count(*) as ct");
+		$ret = $db->selectOne("t_course_user",$condition,$item);
+		$v = 0;
+		if(!empty($ret['ct']))$v = $ret['ct'];
+		redis_api::set($key_1,$v);
+		return $v;
+	}
+	public function getRegistrationCountByClass($class_id){
+        $db = self::InitDB("db_course","query");
+		$key_2 =md5( "course_db.t_course_user.ct.".$class_id);
+		$v = redis_api::get($key_2);
+		if($v!==false){return $v;}
+
+		$condition = array("status"=>1);
+		$condition["fk_class"] = $class_id;
+		$item = array("count(*) as ct");
+		$ret = $db->selectOne("t_course_user",$condition,$item);
+		$v = 0;
+		if(!empty($ret['ct']))$v = $ret['ct'];
+		redis_api::set($key_2,$v);
+		return $v;
+	}
+	public function addPlanUser($course_id,$class_id,$plan_id,$user_id,$token){
+		$key =md5( "course_db.t_course_plan_user.".$class_id);
+		redis_api::del($key);
+		$user_flag = substr($token, 0, 5);
+		$item = array("fk_course"=>$course_id,"fk_class"=>$class_id,"fk_plan"=>$plan_id,"fk_user"=>$user_id,"user_token"=>$token, "user_flag"=>$user_flag);
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_plan_user",$item,true);
+	}
+	/*
+		无status字段
+	*/
+	public function delPlanUser($plan_id,$user_id){
+        $db = self::InitDB("db_course");
+		return $db->delete("t_course_plan_user",array("fk_plan"=>$plan_id,"fk_user"=>$user_id));
+	}
+	public function delPlanUserByToken($token){
+        $db = self::InitDB("db_course");
+		return $db->delete("t_course_plan_user",array("user_token"=>$token));
+	}
+
+	public function listPlanUser($plan_id){
+		$item=array("course_id"=>"fk_course","class_id"=>"fk_class","plan_id"=>"fk_plan","user_id"=>"fk_user");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_plan_user",array("fk_plan"=>$plan_id),$item);
+	}
+	public function getPlanUserByClassId($class_id,$user_id){
+		$key =md5( "course_db.getPlanUserByClassId.".$class_id.$user_id);
+		$v = redis_api::get($key);
+		if($v!==false){return $v;}
+        $db = self::InitDB("db_course","query");
+		$v = $db->selectOne("t_course_plan_user",array("fk_class"=>$class_id,"fk_user"=>$user_id));
+		if(!$v)$v=0;
+		redis_api::set($key,$v,60);
+		return $v;
+	}
+	public function getPlanUserByPlanId($plan_id,$user_id, $token){
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_plan_user",array("fk_plan"=>$plan_id,"fk_user"=>$user_id,"user_flag"=>$token));
+	}
+	public function addCourseVideo($Video){
+        $db = self::InitDB("db_course");
+		return $db->insert("t_course_video",$Video);
+	}
+	public function listCourseVideoByInfo($uid,$course_id,$section_id,$class_id,$plan_id){
+		$condition=array();
+		if($uid){ 		$condition['fk_user']=$uid; }
+		if($course_id){ $condition['fk_course']=$course_id; }
+		if($section_id){$condition['fk_section']=$section_id; }
+		if($class_id){	$condition['fk_class']=$class_id; }
+		if($plan_id){	$condition['fk_plan']=$plan_id; }
+		if(empty($condition))return false;
+		$item=array("video_id"=>"pk_video","user_id"=>"fk_user","course_id"=>"fk_course",	
+					"section_id"=>"fk_section","class_id"=>"fk_class","plan_id"=>"fk_plan",
+					"title","desc","valid","progress","status","filename","filename_org",
+					"create_time","last_updated");
+        $db = self::InitDB("db_course","query");
+		return $db->select("t_course_video",$condition,$item);
+	}
+	public function getCourseVideoByInfo($uid,$course_id,$section_id,$class_id,$plan_id){
+		$condition=array();
+		if($uid)$condition['fk_user']=$uid; 
+		if($course_id)$condition['fk_course']=$course_id; 
+		if($section_id)$condition['fk_section']=$section_id; 
+		if($class_id)$condition['fk_class']=$class_id; 
+		if($plan_id)$condition['fk_plan']=$plan_id; 
+		$item=array("video_id"=>"pk_video","user_id"=>"fk_user","course_id"=>"fk_course",	
+					"section_id"=>"fk_section","class_id"=>"fk_class","plan_id"=>"fk_plan",
+					"title","desc","valid","progress","status","filename","filename_org",
+					"create_time","last_updated");
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_video",$condition,$item);
+	}
+/*
+	public function getCourseVideoByVid($vid){
+		$item=array("video_id"=>"pk_video","user_id"=>"fk_user","course_id"=>"fk_course",	
+			"section_id"=>"fk_section","class_id"=>"fk_class","plan_id"=>"fk_plan",
+			"title","desc","valid","progress","status","filename","filename_org",
+			"create_time","last_updated");
+		return $this->_db->selectOne("t_course_video",array("pk_video"=>$vid),$item);
+	}
+ */
+	public function getCourseVideo($condi){
+		$item=array("video_id"=>"pk_video","user_id"=>"fk_user","course_id"=>"fk_course",	
+					"section_id"=>"fk_section","class_id"=>"fk_class","plan_id"=>"fk_plan",
+					"title","desc","valid","progress","status","filename","filename_org","totaltime","encoding_starttime",
+					"encoding_endtime",
+					"create_time","last_updated");
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne("t_course_video",$condi,$item);
+	}
+	public function updateCourseVideo($vid,$Video){
+        $db = self::InitDB("db_course");
+		return $db->update("t_course_video",array("pk_video"=>$vid),$Video);	
+	}
+	public function getUnstartPlan($hours){
+		$item = new stdclass;
+		$item->id = "pk_plan";
+		$item->class = "fk_class";
+		$item->course = "fk_course";
+		$item->t = "unix_timestamp(start_time)";
+		$table = array("t_course_plan");
+		$condition = "status=1 and start_time>now() and start_time<date_add(now(), interval $hours hour)";
+        $db = self::InitDB("db_course","query");
+		return $db->select($table, $condition, $item, "", "start_time");
+	}
+	public function getCourseList($user, $limit=0, $page=1){
+		$table = array("t_course");
+		$item = new stdclass;
+		$item->course_id = "pk_course";
+		$item->user_total= "user_total";
+		$condition = "fk_user=$user";
+		$orderby = "pk_course";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getCourseUser($course_id, $limit=0, $page=1){
+		$table = array("t_course_user");
+		$item = new stdclass;
+		$item->user_id = "fk_user";
+		$condition = array("fk_course"=>$course_id,"status"=>1);
+		$orderby = "pk_course_user";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getOrgClass($user, $limit=0, $page=1){
+		$table = array("t_course_class");
+		$item = new stdclass;
+		$item->class_id = "pk_class";
+		$condition = "fk_user=$user";
+		$orderby = "pk_class";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getTeacherClass($user, $limit=0, $page=1){
+		$table = array("t_course_plan");
+		$item = new stdclass;
+		$item->plan_id = "pk_plan";
+		$item->course_id = "fk_course";
+		$item->class_id = "fk_class";
+		$condition = "fk_user_plan=$user";
+		$orderby = "pk_plan";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getUserOrder($user, $limit=0, $page=1){
+		$table = array("t_fee_order");
+		$item = new stdclass;
+		$item->order_id = "pk_order";
+		$condition = "fk_user=$user";
+		$orderby = "pk_order";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getUserClass($user, $limit=0, $page=1){
+		$table = array("t_course_user");
+		$item = new stdclass;
+		$item->course_user_id = "pk_course_user";
+		$item->course_id = "fk_course";
+		$condition = array("fk_user"=>$user,"status"=>1);
+		$orderby = "pk_course_user";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function addDiscount($data){
+		$table = array("t_discount");
+        $db = self::InitDB("db_course");
+		return $db->insert($table, $data);
+	}
+	public function getDiscountsByOrg($user_id, $limit, $page){
+		$table = array("t_discount");
+		$item = new stdclass;
+		$item->discount_id = "pk_discount";
+		$item->name = "name";
+		$item->introduction = "introduction";
+		$item->status = "status";
+		$item->owner = "owner";
+		$item->org_id = "fk_org";
+		$item->course_id = "fk_course";
+		$item->discount_type = "discount_type";
+		$item->discount_value = "discount_value";
+		$item->min_fee = "min_fee";
+		$item->starttime = "starttime";
+		$item->endtime = "endtime";
+		$item->createtime = "createtime";
+		$condition = "fk_org=$user_id";
+		$orderby = "pk_discount desc";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function forbidDiscount($user_id, $discount_id){
+		$table = array("t_discount");
+		$condition = "pk_discount=$discount_id and owner=$user_id";
+		$item = array("status"=>-1);
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function forbidDiscountCode($user_id, $discount_code_id){
+		$table = array("t_discount_code");
+		$condition = "pk_discount_code=$discount_code_id and owner=$user_id";
+		$item = array("status"=>-1);
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function getDiscountById($discount_id){
+		$table = array("t_discount");
+		$item = new stdclass;
+		$item->discount_id = "pk_discount";
+		$item->name = "name";
+		$item->introduction = "introduction";
+		$item->owner = "owner";
+		$item->org_id = "fk_org";
+		$item->course_id = "fk_course";
+		$item->discount_type = "discount_type";
+		$item->discount_value = "discount_value";
+		$item->min_fee = "min_fee";
+		$item->starttime = "starttime";
+		$item->endtime = "endtime";
+		$item->createtime = "createtime";
+		$item->status = "status";
+		$condition = "pk_discount=$discount_id";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne($table, $condition, $item);
+	}
+	public function getDiscountCodesByDiscountId($discount_id, $limit, $page){
+		$table = array("t_discount_code");
+		$item = new stdclass;
+		$item->discount_code_id = "pk_discount_code";
+		$item->introduction = "introduction";
+		$item->status = "status";
+		$item->owner = "owner";
+		$item->discount_id = "fk_discount";
+		$item->discount_code = "discount_code";
+		$item->total_num = "total_num";
+		$item->used_num = "used_num";
+		$item->user_limit = "user_limit";
+		$item->starttime = "starttime";
+		$item->endtime = "endtime";
+		$item->createtime = "createtime";
+		$condition = "fk_discount=$discount_id";
+		$orderby = "pk_discount_code desc";
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function addDiscountCode($data){
+		$table = array("t_discount_code");
+        $db = self::InitDB("db_course");
+		return $db->insert($table, $data);
+	}
+	public function getDiscountCodeById($discount_code_id){
+		$table = array("t_discount_code");
+		$item = new stdclass;
+		$item->discount_code_id = "pk_discount_code";
+		$item->introduction = "introduction";
+		$item->status = "status";
+		$item->owner = "owner";
+		$item->discount_id = "fk_discount";
+		$item->discount_code = "discount_code";
+		$item->total_num = "total_num";
+		$item->used_num = "used_num";
+		$item->user_limit = "user_limit";
+		$item->starttime = "starttime";
+		$item->endtime = "endtime";
+		$item->createtime = "createtime";
+		$condition = "pk_discount_code=$discount_code_id";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne($table, $condition, $item);
+	}
+	public function getDiscountCodeByCode($discount_code){
+		$table = array("t_discount_code");
+		$item = new stdclass;
+		$item->discount_code_id = "pk_discount_code";
+		$item->introduction = "introduction";
+		$item->status = "status";
+		$item->owner = "owner";
+		$item->discount_id = "fk_discount";
+		$item->discount_code = "discount_code";
+		$item->total_num = "total_num";
+		$item->used_num = "used_num";
+		$item->user_limit = "user_limit";
+		$item->starttime = "starttime";
+		$item->endtime = "endtime";
+		$item->createtime = "createtime";
+		$condition = "discount_code='$discount_code'";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne($table, $condition, $item);
+	}
+	public function getDiscountCodeUsedsByCodeId($discount_code_id, $limit, $page){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->discount_code_id = "fk_discount_code";
+		$item->user_id = "fk_user";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		$condition = "fk_discount_code=$discount_code_id and status!=2";
+		$orderby = array("fk_order"=>"desc");
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getDiscountCodeUsedsAllByCodeId($discount_code_id, $limit, $page){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->discount_code_id = "fk_discount_code";
+		$item->user_id = "fk_user";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		$condition = "fk_discount_code=$discount_code_id";
+		$orderby = array("fk_order"=>"desc");
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getDiscountCodeUsedByOrderId($order_id){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->discount_code_id = "fk_discount_code";
+		$item->user_id = "fk_user";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		$condition = "fk_order=$order_id";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne($table, $condition, $item);
+	}
+	public function getDiscountCodeUsedByOrderIdOk($order_id){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->discount_code_id = "fk_discount_code";
+		$item->user_id = "fk_user";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		$condition = "fk_order=$order_id and status!=2";
+        $db = self::InitDB("db_course","query");
+		return $db->selectOne($table, $condition, $item);
+	}
+	public function getDiscountCodeUsedsByCodeIdUserId($discount_code_id, $user_id, $limit, $page){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		$condition = "fk_discount_code=$discount_code_id and fk_user=$user_id";
+		$orderby = array("fk_order"=>"desc");
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getDiscountCodeUsedsByCodeIdUserIdOk($discount_code_id, $user_id, $limit, $page){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$condition = "fk_discount_code=$discount_code_id and fk_user=$user_id and status!=2";
+		$orderby = array("fk_order"=>"desc");
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function getDiscountCodeUsedsByUserId($user_id, $statuses, $limit, $page){
+		$table = array("t_discount_code_used");
+		$item = new stdclass;
+		$item->order_id = "fk_order";
+		$item->discount_code_id = "fk_discount_code";
+		$item->status = "status";
+		$item->createtime = "createtime";
+		if(0 == count($statuses)){
+			$extra_condition = "";
+		}else if(1 == count($statuses)){
+			$extra_condition = " and status=" . $statuses[0];
+		}else{
+			$extra_condition = " and status in (" . implode(", ", $statuses) . ")";
+		}
+		$condition = "fk_user=$user_id " . $extra_condition;
+		$orderby = array("fk_order"=>"desc");
+        $db = self::InitDB("db_course","query");
+		$db->setLimit($limit);
+		$db->setPage($page);
+		$db->setCount(true);
+		return $db->select($table, $condition, $item, "", $orderby);
+	}
+	public function updateUsedNumForDiscountCodeById($discount_code_id, $num){
+		$table = array("t_discount_code");
+		$condition = "pk_discount_code=$discount_code_id";
+		$item = array("used_num=used_num+$num");
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function setUsedNumForDiscountCodeById($discount_code_id, $num){
+		$table = array("t_discount_code");
+		$condition = "pk_discount_code=$discount_code_id";
+		$item = array("used_num"=>$num);
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function addDiscountCodeUsed($data){
+		$table = array("t_discount_code_used");
+        $db = self::InitDB("db_course");
+        return $db->insert($table, $data);
+	}
+	public function setStatusForDiscountCodeUsedByOrderId($order_id, $status){
+		$table = array("t_discount_code_used");
+		$condition = "fk_order=$order_id";
+		$item = array("status"=>$status);
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function updateDiscountCodeForUsed($order_id, $discount_code_id){
+		$table = array("t_discount_code_used");
+		$condition = "fk_order=$order_id and status=0";
+		$item = array("fk_discount_code"=>$discount_code_id);
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function setPriceForFeeOrderByOrderId($order_id, $price_old, $price, $out_trade_id){
+		$table = array("t_fee_order");
+		$condition = "pk_order=$order_id";
+		$item = array("price_old"=>$price_old, "price"=>$price, "out_trade_id"=>"$out_trade_id");
+        $db = self::InitDB("db_course");
+		return $db->update($table, $condition, $item);
+	}
+	public function getCoursesByOrg($user_id){
+		$table = array("t_course");
+		$item = new stdclass;
+		$item->course_id = "pk_course";
+		$item->title = "title";
+		$item->descript = "descript";
+		$condition = "fk_user=$user_id";
+        $db = self::InitDB("db_course","query");
+		$ret = $db->select($table, $condition, $item);
+		return $ret;
+	}
+	public function getFeeCoursesByOrg($user_id){
+		$table = array("t_course");
+		$item = new stdclass;
+		$item->course_id = "pk_course";
+		$item->title = "title";
+		$item->descript = "descript";
+		$condition = "fk_user=$user_id and fee_type!=0";
+        $db = self::InitDB("db_course","query");
+		$ret = $db->select($table, $condition, $item);
+		return $ret;
+	}
+	public function deleteUsedByOrderId($order_id){
+		$table = array("t_discount_code_used");
+		$condition = "fk_order=$order_id";
+        $db = self::InitDB("db_course");
+		return $db->delete($table, $condition);
+	}
+	public function statOrderByCourseId($starttime, $endtime, $course_id){
+		$table = array("t_fee_order");
+		$item = new stdclass;
+		$item->num = "count(1)";
+		$item->price = "sum(price)";
+		$item->price_old = "sum(price_old)";
+		$item->pay_type = "pay_type";
+		$condition = "create_time>='$starttime' and create_time<'$endtime' and status=2";
+		if(!empty($course_id)){
+			$condition .= " and fk_course='$course_id'";
+		}
+		$group = array("pay_type");
+        $db = self::InitDB("db_course","query");
+		$db->setCount(false);
+		$ret = $db->select($table, $condition, $item, $group);
+		return $ret;
+	}
+	public function countStudent($cids){
+		$table = array("t_course_user");
+        $condition=array(
+                'fk_course in ('.$cids.')',
+            );
+        $items=array(
+                'fk_course',
+                'count(*) as num',
+            );
+        $group=array('fk_course');
+        $db = self::InitDB("db_course","query");
+		$ret = $db->select($table,$condition,$items,$group,"","");
+		return $ret;
+	}
+	public function getStudentsByCid($cid){
+		$table = array("t_course_user");
+        $condition=array(
+                'fk_course'=>$cid,
+            );
+        $items=array(
+                'fk_user',
+            );
+        $db = self::InitDB("db_course","query");
+		$ret = $db->select($table,$condition,$items,"","","");
+		return $ret;
+	}
+    public function addCourseTop($course_id){
+//define('DEBUG',true);
+        $db=self::initdb();
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::del($key);
+		$key ="course_api::getcourselist.{$course_id}";
+		$v = redis_api::del($key);
+        $sql='update t_course set top=(select max(top) from (select * from t_course where pk_course='.$course_id.') as a)+1 where pk_course='.$course_id;
+        return $db->execute($sql);
+
+    }   
+    public function delCourseTop($course_id){
+        $table=array("t_course");
+        $db=self::initdb();
+		$key =md5( "course_db.getCourse.".$course_id);
+		$v = redis_api::del($key);
+		$key ="course_api::getcourselist.{$course_id}";
+		$v = redis_api::del($key);
+        return $db->update($table,array('pk_course'=>$course_id),array('top'=>0));
+
+    }
+    public function getPlansByClassId($class_id){
+        $db=self::initdb();
+		$item = new stdclass;
+		$item->plan_id = "pk_plan";
+		$condition = "fk_class=$class_id";
+		$data = $db->select("t_course_plan",$condition,$item);
+		if(!empty($data->items)){
+			return $data->items;
+		}
+		return false;
+    }
+}
+

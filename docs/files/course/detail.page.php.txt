@@ -1,0 +1,125 @@
+<?php
+class course_detail{
+	public function __construct($inPath){
+		return;
+	}
+
+	public function pageGetOrgStat($inPath){
+		$ret = new stdclass;
+		$ret->course_num = 0;
+		$ret->user_num = 0;
+		$ret->fav_num = 0;
+		$ret->instation_num = 0;
+		$ret->class_num = 0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id)){
+			return $ret;
+		}
+		$data = user_db::listFav(null, $params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->fav_num = $data->totalSize;
+		}
+		$message_db = new message_db;
+		$data = $message_db->getInstation($params->user_id, 1, 1, "all");
+		if(!empty($data->items)){
+			$ret->instation_num = $data->totalSize;
+		}
+		$course_db = new course_db;
+		$data = $course_db->getOrgClass($params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->class_num = $data->totalSize;
+		}
+		$data = $course_db->getCourseList($params->user_id, 0, 1);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$ret->course_num = $data->totalSize;
+		$users = array();
+		$ret->user_num = 0;
+		foreach($data->items as $item){
+			$ret->user_num += $item['user_total'];
+		}
+		return $ret;
+	}
+	public function pageGetTeacherStat($inPath){
+		$ret = new stdclass;
+		$ret->course_num = 0;
+		$ret->user_num = 0;
+		$ret->fav_num = 0;
+		$ret->instation_num = 0;
+		$ret->class_num = 0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id)){
+			return $ret;
+		}
+		$data = user_db::listFav(null, $params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->fav_num = $data->totalSize;
+		}
+		$message_db = new message_db;
+		$data = $message_db->getInstation($params->user_id, 1, 1, "all");
+		if(!empty($data->items)){
+			$ret->instation_num = $data->totalSize;
+		}
+		$course_db = new course_db;
+		$data = $course_db->getTeacherClass($params->user_id, 0, 1);
+		if(empty($data->items)){
+			return $ret;
+		}
+		$courses = array();
+		$classes = array();
+		foreach($data->items as $item){
+			$courses[$item["course_id"]] = 1;
+			$classes[$item["class_id"]] = 1;
+		}
+		$ret->course_num = count($courses);
+		$ret->class_num = count($classes);
+		//$users = array();
+		$ret->user_num=0;
+			print_r($class);
+		foreach($classes as $class=>$i){
+			$ret->user_num += $class['user_total'];
+			//$data = $course_db->getClassUser($class);
+			//if(!empty($data->items)){
+			//	foreach($data->items as $item){
+			//		$users[$item["user_id"]] = 1;
+			//	}
+			//}
+		}
+		//$ret->user_num = count($users);
+		return $ret;
+	}
+	public function pageGetStudentStat($inPath){
+		$ret = new stdclass;
+		$ret->course_num = 0;
+		$ret->fav_num = 0;
+		$ret->instation_num = 0;
+		$ret->fee_num = 0;
+		$ret->order_num = 0;
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->user_id)){
+			return $ret;
+		}
+		$data = user_db::listFav(null, $params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->fav_num = $data->totalSize;
+		}
+		$message_db = new message_db;
+		$data = $message_db->getInstation($params->user_id, 1, 1, "all");
+		if(!empty($data->items)){
+			$ret->instation_num = $data->totalSize;
+		}
+		$course_db = new course_db;
+		$data = $course_db->getUserOrder($params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->order_num = $data->totalSize;
+		}
+		$data = $course_db->getUserClass($params->user_id, 1, 1);
+		if(!empty($data->items)){
+			$ret->course_num = $data->totalSize;
+		}
+		return $ret;
+	}
+}
+?>
+

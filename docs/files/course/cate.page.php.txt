@@ -1,0 +1,20 @@
+<?php
+class course_cate{
+	public function pageList($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+//		define("DEBUG", true);
+		$course_api = new course_api;
+		$catelist = $course_api->getlist();
+		if($catelist === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the cate is not found!";
+			return $ret;
+		}
+//		print_r($catelist);
+		return $catelist;
+	}
+}
+

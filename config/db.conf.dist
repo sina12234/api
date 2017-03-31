@@ -1,0 +1,603 @@
+db_user{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_user;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_user;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_user;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_user;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_video{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_video;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+}
+db_live{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_live;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_live;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_live;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_live;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_weixin{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_weixin;
+		password ;
+		engine mysqli;
+		charset utf8;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_weixin;
+		password ;
+		engine mysqli;
+		charset utf8;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_weixin;
+		password ;
+		engine mysqli;
+		charset utf8;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_weixin;
+		password ;
+		engine mysqli;
+		charset utf8;
+	}
+}
+db_utility{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_utility;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_utility;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_utility;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_utility;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_course{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_course;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_course;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_course;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_course;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_activity{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_activity;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_activity;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_activity;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_activity;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_message{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_message;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_message;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_message;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_message;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_comment{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_comment;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_comment;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_comment;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_comment;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_log{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_log;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_log;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_log;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_log;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+
+db_mgr{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_mgr;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_mgr;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_mgr;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_mgr;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_platform{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_platform;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_platform;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_platform;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_platform;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_tag{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_tag;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_tag;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_tag;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_tag;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_stat{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_stat;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_stat;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_stat;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_stat;
+		password ;
+		charset utf8;
+		engine mysqli;
+	}
+}
+db_blog{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_blog;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_blog;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_blog;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_blog;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+}
+db_exam{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_exam;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_exam;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_exam;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_exam;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+}
+db_order{
+	main{
+		host 127.0.0.1;
+		user root;
+		database db_order;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3401;
+		user root;
+		database db_order;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3402;
+		user root;
+		database db_order;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+	query{
+		host 127.0.0.1;
+        port 3403;
+		user root;
+		database db_order;
+		password ;
+		charset utf8;
+		engine pdo_mysql;
+	}
+}

@@ -1,0 +1,16 @@
+seek{
+        seek_course_length 10;
+		seek_course_ip 127.0.0.1;
+        seek_course_port 9312;
+        seek_plan_length 10;
+		seek_plan_ip 127.0.0.1;
+        seek_plan_port 9313;
+        seek_teacher_length 10;
+		seek_teacher_ip 127.0.0.1;
+        seek_teacher_port 9314;
+		seek_teacher_delta 1;
+		seek_question_length 10;
+		seek_question_ip 127.0.0.1;
+        seek_question_port 9315;
+}
+

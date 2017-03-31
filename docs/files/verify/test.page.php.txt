@@ -1,0 +1,11 @@
+<?php
+class verify_test{
+	public function pageEntry($inPath){
+		$api = new verify_api;
+		//$r = $api->sendMobileCode("13488810858",3);
+		$r = $api->verifyMobile("13488810858",1038);
+		var_dump($r);
+		print_r($inPath);
+	}
+}
+

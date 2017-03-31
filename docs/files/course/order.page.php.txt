@@ -1,0 +1,74 @@
+<?php
+class course_order{
+	public function __construct($inPath){
+		return;
+	}
+	public function pageGetOrderByUniqueOrderId($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->unique_order_id) && empty($params->out_trade_id)){
+			$ret->result->msg = "没有参数";
+			return $ret;
+		}
+		$course_db = new course_db;
+		if(!empty($params->unique_order_id)){
+			$order_info = $course_db->getFeeOrderByUqi($params->unique_order_id);
+		}else{
+			$order_info = $course_db->getFeeOrderByOutTradeId($params->out_trade_id);
+		}
+		if(!$order_info){
+			$ret->result->msg = "没有对应的订单";
+			return $ret;
+		}
+		$user_db = new user_db;
+		$user_info = $user_db->getUser($order_info["user_id"]);
+		if($user_info){
+			$order_info["username"] = $user_info["name"];
+		}else{
+			$order_info["username"] = "";
+		}
+		$course_info = $course_db->getCourse($order_info["course_id"]);
+		if($course_info){
+			$order_info["title"] = $course_info["title"];
+		}else{
+			$order_info["title"] = "";
+		}
+		if($order_info["unique_order_id"] != $order_info["out_trade_id"]){
+			$used = $course_db->getDiscountCodeUsedByOrderId($order_info["order_id"]);
+			if($used){
+				$code = $course_db->getDiscountCodeById($used["discount_code_id"]);
+				if($code){
+					$order_info["discount_code"] = $code["discount_code"];
+					$order_info["introduction"] = $code["introduction"];
+				}
+			}
+		}
+		$ret->data = $order_info;
+		$ret->result->code = 0;
+		return $ret;
+	}
+	public function pageStatOrderByCourseId($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		$params = SJson::decode(utility_net::getPostData());
+		if(empty($params->starttime) && empty($params->endtime) && empty($params->course_id)){
+			$ret->result->msg = "没有参数";
+			return $ret;
+		}
+		$course_db = new course_db;
+		$data = $course_db->statOrderByCourseId($params->starttime, $params->endtime, $params->course_id);
+		if(empty($data->items)){
+			$ret->result->msg = "没有结果";
+			return $ret;
+		}
+		$ret->data = $data->items;
+		$ret->result->code = 0;
+		return $ret;
+	}
+}
+

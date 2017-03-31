@@ -1,0 +1,22 @@
+<?php
+class activity_db{
+
+	public static function InitDB($dbname="db_activity") {
+		$db = new SDb();
+		$db->useConfig($dbname, 'main');
+		return $db;
+	}
+	
+	public static function getScore($number){
+		$table=array("2014_score");
+		$db = self::InitDB();
+		return $db->selectOne($table,array("number"=>$number), "*");
+	}
+	public static function getScoreByName($name){
+		$table=array("2014_score");
+		$db = self::InitDB();
+		return $db->selectOne($table,array("name"=>$name), "*");
+	}
+}
+
+

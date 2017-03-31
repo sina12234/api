@@ -1,0 +1,90 @@
+<?php
+class admin_db{
+
+	public static function InitDB($dbname="db_mgr") {
+		$db = new SDb();
+		$db->useConfig($dbname, 'main');
+		return $db;
+	}
+	public static function getAdminUser($name){
+		$table=array("t_mgr_user");
+		$db = self::InitDB();
+		return $db->selectOne($table,array("name"=>$name));
+	}
+	public static function getAdminUserByUid($uid){
+		$table=array("t_mgr_user");
+		$db = self::InitDB();
+		return $db->selectOne($table,array("pk_mgr_user"=>$uid));
+	}
+
+	public static function updateUser($uid, $data){
+		$table=array("t_mgr_user");
+		$db = self::InitDB();
+		$condition = "pk_mgr_user = $uid";
+		return $db->update($table, $condition, $data);
+	}
+/*
+	public static function addUserParterner($data){
+		$table=array("t_user_parterner");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	public static function addUserEmail($data){
+		$table=array("t_user_email");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	public static function addUserMobile($data){
+		$table=array("t_user_mobile");
+		$db = self::InitDB();
+		return $db->insert($table,$data,true);
+	}
+	public static function updateUser($id, $data){
+		$table=array("t_user");
+		$db = self::InitDB();
+		return $db->update($table, array('pk_user' => $id), $data);
+	}
+	
+	public static function getUser($id){
+		$table=array("t_user");
+		$db = self::InitDB();
+		return $db->selectOne($table,array("pk_user"=>$id), "*");
+	}
+	public static function getUserIDByEmail($email){
+		$table=array("t_user_email");
+		$db = self::InitDB();
+		$ret = $db->selectOne($table,array("email"=>strtolower($email)));
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+	public static function getUserIDByMobile($mobile){
+		$table=array("t_user_mobile");
+		$db = self::InitDB();
+		$ret = $db->selectOne($table,array("mobile"=>$mobile));
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+	public static function getUserIDByPaterner($source,$open_id){
+		$table=array("t_user_parterner");
+		$db = self::InitDB();
+		$ret = $db->selectOne($table,array("source"=>$source,"open_id"=>$open_id));
+		if(!empty($ret['fk_user'])){
+			return $ret['fk_user'];
+		}
+		return 0;
+	}
+
+	public static function listUser($page = 1, $length = 20){
+		$table=array("t_user");
+		$db = self::InitDB();
+		$db->setPage($page);
+		$db->setLimit($length);
+		return $db->select($table, '', '*', '', 'pk_user desc');
+	}
+*/
+}
+

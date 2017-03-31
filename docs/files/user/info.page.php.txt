@@ -1,0 +1,425 @@
+<?php
+/**
+  * 用户API 
+  * @link http://wiki.gn100.com/doku.php?id=docs:api:user
+  **/
+class user_info{
+	/**
+	 * 校验提交的服务器权限，仅在配置文件里的才可以提交
+	 * */
+	public function __construct($inPath){
+		return;
+		$conf = SConfig::getConfig(ROOT_CONFIG."/security.conf","user");
+		if(empty($conf->allow)){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+		if(is_array($conf->allow)){
+			if(!in_array($_SERVER['REMOTE_ADDR'],$conf->allow)){
+				header("HTTP/1.0 404 Not Found");
+				exit;
+			}
+		}elseif($_SERVER['REMOTE_ADDR']!=$conf->allow){
+			header("HTTP/1.0 404 Not Found");
+			exit;
+		}
+	}
+	/**
+	  * 用户创建立接口
+	  */
+	function pageCreate($inPath){
+		$params=SJson::decode(utility_net::getPostData());
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if(empty($params->name) || empty($params->mobile)){
+			$ret->result->code = -1; 
+			$ret->result->msg = 'name or mobile is empty'; 
+			return $ret;
+		}
+		//{{{检查敏感词
+/*
+		$censor_db = new censor_db;
+		$db_ret = $censor_db->searchWord($params->name);
+		if(!empty($db_ret)){
+			$ret->result->code = -3; 
+			$ret->result->msg= "您的名字中包含了 ".$db_ret['content']." 敏感词";
+			return $ret;
+		}
+*/
+		//}}}
+		//手机号校验
+		if(utility_valid::mobile($params->mobile)===false){
+			$ret->result->code = -6; 
+			$ret->result->msg = 'mobile is error'; 
+			return $ret;
+		}
+		$user=array();
+		$user_db = new user_db;
+		$user_id = $user_db->getUserIDByMobile($params->mobile);
+		if($user_id === false){
+			$ret->result->code = -5; 
+			$ret->result->msg = 'user is not found'; 
+			return $ret;
+		}elseif($user_id>0){
+			$ret->result->code = -2; 
+			$ret->result->msg = 'user is created'; 
+			return $ret;
+		}
+		$user_info=array();
+		$user_info['name']=$params->name;
+		if(!empty($params->password)){
+			$user_info['password']=user_api::encryptPassword($params->password);;
+		}
+		//创建立用户
+		$user_info['create_time']=date("Y-m-d H:i:s");
+		$user_info['status']	=user_const::ENABLED;
+		$user_info['type']		=user_const::TYPE_USER;
+		$user_info['verify_status']=user_const::VERIFY_INNER | user_const::VERIFY_MOBILE;
+		if(!empty($params->register_ip)){
+			$user_info['register_ip']=utility_ip::toLong($params->register_ip);
+		}
+		if(!empty($params->thumb_big)){ $user_info['thumb_big']=$params->thumb_big; }
+		if(!empty($params->thumb_med)){ $user_info['thumb_med']=$params->thumb_med; }
+		if(!empty($params->thumb_small)){ $user_info['thumb_small']=$params->thumb_small; }
+		$user_id = $user_db->addUser($user_info);
+		if(empty($user_id)){
+			$ret->result->code = -7; 
+			$ret->result->msg = 'faild'; 
+			return $ret;
+		}
+
+		//}}}
+		//站内用户
+		$user_mobile= array();
+		$user_mobile['fk_user']=$user_id;
+		$user_mobile['mobile']=$params->mobile;
+		$mobile_info = utility_mobile::info($params->mobile);
+		if(!empty($mobile_info)){
+			$user_mobile['city']=$mobile_info->city;
+			$user_mobile['province']=$mobile_info->province;
+			$user_mobile['supplier']=$mobile_info->supplier;
+		}
+		$db_ret = $user_db->addUserMobile($user_mobile);
+		if($db_ret===false){
+			$ret->result->code = -9; 
+			$ret->result->msg = 'faild'; 
+		}
+		//站外用户
+		$ret->result->code = 0; 
+		$ret->result->msg = 'ok'; 
+		$ret->data=array("uid"=>$user_id);
+		return $ret;
+	}
+
+	/**
+	 * 更新用户信息
+	 * @param $inPath  
+	 * @param user object  
+	 */
+	public function pageUpdate($inPath){
+		$params = json_decode(utility_net::getPostData(), true);
+        if (empty($inPath[3]) || !is_numeric($inPath[3]) || empty($params)) {
+			return array(
+				'result' => array(
+					'code' => -11,	
+					'msg' => 'invalid parameter',	
+				),	
+			);
+        }
+		$user_api = new user_api;
+        $ret = $user_api->update((int)$inPath[3], $params);
+        if (isset($ret['code'])) {
+			return array(
+				'result' => $ret,	
+			);
+        }
+		if ($ret == false) {
+			return array('result' => array(
+				'code' => -1,	
+				'msg' => 'failed',	
+			),);
+		}
+		return array('result' => array(
+			'code' => 0,	
+			'msg' => 'ok',	
+		),);
+	}
+
+	public function pageGet($inPath){
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return array(
+				'result' => array(
+					'code' => -11,	
+					'msg' => 'invalid parameter',	
+				),	
+			);
+        }
+		$user_api = new user_api;
+		$user = $user_api->get((int)$inPath[3]);
+		if (empty($user)) {
+			return array(
+				"code" => '-102',
+				"msg" => 'the user does not exist',
+			);	
+		}
+		return array(
+			'data' => $user,	
+		);
+	}
+
+	public function pageSearch($inPath){
+		$user_api = new user_api;
+		$params = SJson::decode(utility_net::getPostData(),true);
+		if(empty($params)){
+			$params = $_GET;
+		}
+		return $user_api->search($params);
+	}
+
+	public function pageList($inPath){
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+			return array(
+				'result' => array(
+					'code' => -201,	
+					'msg' => 'invalid parameter',	
+				),	
+			);
+        }
+		$pn = (int)$inPath[4];
+		if (empty($pn)) {
+			$pn = 20;
+		}
+		$user_api = new user_api;
+		$user_list = $user_api->getlist((int)$inPath[3], $pn);
+		if (empty($user_list)) {
+			return array(
+				"code" => -202,
+				"msg" => 'empty data ',
+			);	
+		}
+		return $user_list;
+	}
+	public function pageaddFav($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "the data is empty!";
+		$user_api = new user_api;
+		$params = SJson::decode(utility_net::getPostData(),true);
+//		$data = $params;
+		if(empty($params["course_id"]) || empty($params["user_id"])){
+			return $ret;
+		}
+/*		if($params["course_id"] == 0 || $params["user_id"]== 0){
+			return $ret;
+		}
+*/
+		$data["course_id"] = empty($params)? "1":$params["course_id"];
+		$data["user_id"] = empty($params)?"1":$params["user_id"];
+		//当传过来的值为空，不能插入成功
+		//define("DEBUG",true);
+		$fav_ret = $user_api->addFav($data);	
+		if($fav_ret === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+		}else{
+			$ret->result->code = 0;
+			$ret->result->msg = "success!";
+		}
+		return $ret;
+	}
+	public function pagelistFav($inPath){	
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		//page 页数
+		if(empty($inPath[3])||!is_numeric($inPath[3])){$page = 1;}else{$page = $inPath[3];}
+		//length 每页显示数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$length = 10;}else{$length = $inPath[4];}
+
+		$user_api = new user_api;
+//		$cid = 116;
+//		$uid = 153;
+		$params = SJson::decode(utility_net::getPostData());
+		$cid = isset($params->cid)? $params->cid:null;	
+		$uid = isset($params->uid)? $params->uid:null;
+		$listfav = $user_api->listfav($cid,$uid,$page,$length);
+		if($listfav === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $listfav;
+	}
+    //添加公告
+    public function pageaddNotice($inPath){
+        $ret = new stdclass;
+		$ret->result =  new stdclass;
+        $ret -> result -> code = -1;
+        $ret -> result -> msg = "the data is empty!";
+        $user_api=new user_api;
+        $params=SJson::decode(utility_net::getPostData(),true);
+        $notice_ret=$user_api->addNotice($params);
+        if($notice_ret===false){
+            $ret->result->code=-2;
+            $ret->result->msg="db error!";
+        }else{
+            $ret->result->code=0;
+            $ret->result->msg="success!";
+        }
+        return $ret;
+    }
+    //修改公告
+    public function pageupdateNotice($inPath){
+        $ret = new stdclass;
+		$ret->result =  new stdclass;
+        $ret -> result -> code = -1;
+        $ret -> result -> msg = "the data is empty!";
+        $user_api=new user_api;
+        $params=SJson::decode(utility_net::getPostData(),true);
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+            return array(
+                'result' => array(
+                    'code' => -11,  
+                    'msg' => 'invalid parameter',   
+                ),  
+            );
+        }
+        $notice_ret=$user_api->updateNotice($inPath[3],$params);
+        if($notice_ret===false){
+            $ret->result->code=-2;
+            $ret->result->msg="db error!";
+        }else{
+            $ret->result->code=0;
+            $ret->result->msg="success!";
+        }
+        return $ret;
+    }
+    //删除公告
+    public function pagedelNotice($inPath){
+        $ret = new stdclass;
+		$ret->result =  new stdclass;
+        $ret -> result -> code = -1;
+        $ret -> result -> msg = "";
+        $user_api=new user_api;
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+            $ret -> result -> msg = 'invalid parameter'; 
+            return $ret;
+        }
+        $notice_ret=$user_api->delNotice($inPath[3]);
+        if($notice_ret===false){
+            $ret->result->code=-2;
+            $ret->result->msg="db error!";
+        }else{
+            $ret->result->code=0;
+            $ret->result->msg="success!";
+        }
+        return $ret;
+    }
+    //置顶公告
+    public function pagetopNotice($inPath){
+        $ret = new stdclass;
+		$ret->result =  new stdclass;
+        $ret -> result -> code = -1;
+        $ret -> result -> msg = "";
+        $user_api=new user_api;
+        if (empty($inPath[3]) || empty($inPath[4])) {
+            $ret -> result -> msg = 'invalid parameter'; 
+            return $ret;
+        }
+        $notice_ret=$user_api->topNotice($inPath[3],$inPath[4]);
+        if($notice_ret===false){
+            $ret->result->code=-2;
+            $ret->result->msg="db error!";
+        }else{
+            $ret->result->code=0;
+            $ret->result->msg="success!";
+        }
+        return $ret;
+    }
+    //取消置顶公告
+    public function pagenoTopNotice($inPath){
+        $ret = new stdclass;
+		$ret->result =  new stdclass;
+        $ret -> result -> code = -1;
+        $ret -> result -> msg = "";
+        $user_api=new user_api;
+        if (empty($inPath[3])) {
+            $ret -> result -> msg = 'invalid parameter'; 
+            return $ret;
+        }
+        $notice_ret=$user_api->noTopNotice($inPath[3]);
+        if($notice_ret===false){
+            $ret->result->code=-2;
+            $ret->result->msg="db error!";
+        }else{
+            $ret->result->code=0;
+            $ret->result->msg="success!";
+        }
+        return $ret;
+    }
+    //公告列表
+    public function pagegetNoticeList($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "";
+		//page 页数
+		if(empty($inPath[3])||!is_numeric($inPath[3])){$page = 1;}else{$page = $inPath[3];}
+		//length 每页显示数
+		if(empty($inPath[4])||!is_numeric($inPath[4])){$length = 10;}else{$length = $inPath[4];}
+		$user_api = new user_api;
+		$params = SJson::decode(utility_net::getPostData());
+		$uid = isset($params->uid)? $params->uid:null;
+	//	error_log("uid是".var_export($uid,true)."\n", 3, "/tmp/fanlog.log_");
+		$notice_list = $user_api->getNoticeList($page,$length,$uid);
+		if($notice_list === false){
+			$ret->result->code = -2;
+			$ret->result->msg = "the data is not found!";
+			return $ret;
+		}
+		return $notice_list;
+    }
+    //获取公告
+	public function pagegetNotice($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "invalid parameter";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -101;
+		    $ret->result->msg= "invalid parameter";
+            return $ret;
+        }
+		$user_api = new user_api;
+		$r= $user_api->getNotice((int)$inPath[3]);
+		if (empty($r)) {
+		    $ret->result->code = -102;
+		    $ret->result->msg= "the data is not found!";
+            return $ret;
+		}else{
+            return $r;
+        }
+	}
+	public function pageGetBasicUser($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		$ret->result->code = -1;
+		$ret->result->msg= "invalid parameter";
+        if (empty($inPath[3]) || !is_numeric($inPath[3])) {
+		    $ret->result->code = -101;
+		    $ret->result->msg= "invalid parameter";
+            return $ret;
+        }
+		$r= user_db::getUser($inPath[3]);
+		if (empty($r)) {
+		    $ret->result->code = -102;
+		    $ret->result->msg= "the data is not found!";
+            return $ret;
+		}else{
+            return $r;
+        }
+	}
+}
+

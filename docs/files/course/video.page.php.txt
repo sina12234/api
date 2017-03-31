@@ -1,0 +1,150 @@
+<?php
+class course_video{
+	public function pageGenID($inPath){
+		$ret = new stdclass;
+		$params = SJson::decode(utility_net::getPostData());
+		if (empty($inPath[3]) || empty($params->course_id) || empty($params->section_id)){
+			$ret->result =  new stdclass;
+			$ret->result->code = -1;
+			$ret->result->msg= "params is error";
+			return $ret;
+		}
+		$uid = $inPath[3];
+		$video_info = array();
+		$video_info['fk_user']=$uid;
+		$video_info['fk_course']=$params->course_id;
+		$video_info['fk_section']=$params->section_id;
+		$video_info['fk_class']=!empty($params->class_id)?$params->class_id:0;
+		$video_info['fk_plan']=!empty($params->plan_id)?$params->plan_id:0;
+		$video_info['valid']=0	;	//1有效视频 0 无效视频 
+		$video_info['progress']=0	;	//1转码完成 0 没有开始 -1 转码失败
+		$video_info['status']=0	;	//1 正常 -1 屏蔽
+		$video_info['create_time']=date("Y-m-d H:i:s")	;	//1 正常 -1 屏蔽
+		$db = new course_db;
+		$video_id = $db->addCourseVideo($video_info);
+		if(empty($video_id)){
+			$video = $db->getCourseVideoByInfo($uid,$params->course_id,$params->section_id,$video_info['fk_class'],$video_info['fk_plan']);
+			if(empty($video)){
+				$ret->result =  new stdclass;
+				$ret->result->code = -2;
+				$ret->result->msg= "gen error";
+				return $ret;
+			}
+			$video_id = $video['video_id'];
+		}
+		$ret->data=array("video_id"=>$video_id);
+		return $ret;
+	}
+	public function pageUpdate($inPath){
+		$ret = new stdclass;
+		$ret->result =  new stdclass;
+		if (empty($inPath[3])){
+			$ret->result->code = -1;
+			$ret->result->msg= "video id is error";
+			return $ret;
+		}
+		$vid = $inPath[3];
+		$params = SJson::decode(utility_net::getPostData());
+		$updates = array();
+		if(!empty($params->title))	$updates['title']=$params->title;
+		if(!empty($params->desc))	$updates['desc']=$params->desc;
+		if(!empty($params->filename))	$updates['filename']=$params->filename;
+		if(isset($params->encoding_starttime) && is_numeric($params->encoding_starttime)){
+			$updates['encoding_starttime']=$params->encoding_starttime;
+		}
+		if(isset($params->encoding_endtime) && is_numeric($params->encoding_endtime))	{
+			$updates['encoding_endtime']=$params->encoding_endtime;
+		}
+		if(!empty($params->totaltime))	$updates['totaltime']=$params->totaltime;
+		if(!empty($params->filename_org))	$updates['filename_org']=$params->filename_org;
+		if(!empty($params->valid)){
+			if($params->valid=="valid")$updates['valid'] = 1;
+			if($params->valid=="invalid")$updates['valid'] = 0;
+		}
+		if(!empty($params->progress)){
+			if($params->progress=="ok")$updates['progress'] = 1;
+			if($params->progress=="error")$updates['valid'] = -1;
+		}
+		if(!empty($params->status)){
+			if($params->status=="enabled")$updates['status'] = 1;
+			if($params->status=="disabled")$updates['status'] = -1;
+		}
+		$db = new course_db;
+		$updates['last_updated']=date("Y-m-d H:i:s");
+		$r = $db->updateCourseVideo($vid,$updates);
+		if($r!==false){
+			$ret->result->code=0;
+		}else{
+			$ret->result->code=-2;
+		}
+		return $ret;
+	}
+	public function pageList($inPath){
+		$ret = new stdclass;
+		$params = SJson::decode(utility_net::getPostData());
+		if (empty($params->course_id)){
+			$ret->result =  new stdclass;
+			$ret->result->code = -1;
+			$ret->result->msg= "params is error";
+			return $ret;
+		}
+		$user_id = !empty($params->user_id)?empty($params->user_id):0;
+		$course_id = $params->course_id;
+		$section_id= !empty($params->section_id)?empty($params->section_id):0;
+		$class_id = !empty($params->class_id)?empty($params->class_id):0;
+		$plan_id= !empty($params->plan_id)?empty($params->plan_id):0;
+		$db = new course_db;
+		$r = $db->listCourseVideoByInfo($user_id,$course_id,$section_id,$class_id,$plan_id);
+		if(!empty($r->items)){
+			foreach($r->items as &$item){
+				if($item['status']==1){ $item['status']="enabled"; }
+				elseif($item['status']==0){$item['status']="disabled";}
+
+				if($item['progress']==1){ $item['progress']="ok"; }
+				elseif($item['progress']==-1){$item['progress']="error";}
+
+				if($item['valid']==1){ $item['valid']="valid"; }
+				elseif($item['valid']==-1){$item['valid']="invalid";}
+			}
+			$ret->data=$r->items;
+		}else{
+			$ret->data=array();
+		}
+		return $ret;
+	}
+	public function pageGet($inPath){
+		$ret = new stdclass;
+		$params = SJson::decode(utility_net::getPostData());
+		if (empty($params->video_id) && empty($params->plan_id)){
+			$ret->result =  new stdclass;
+			$ret->result->code = -1;
+			$ret->result->msg= "params is error";
+			return $ret;
+		}
+		$db = new course_db;
+		$condi=array();
+		if(!empty($params->video_id)){
+			$condi['pk_video']=$params->video_id;
+		}
+		if(!empty($params->plan_id)){
+			$condi['fk_plan']=$params->plan_id;
+		}
+		$item = $db->getCourseVideo($condi);
+
+		if(!empty($item)){
+				if($item['status']==1){ $item['status']="enabled"; }
+				elseif($item['status']==0){$item['status']="disabled";}
+
+				if($item['progress']==1){ $item['progress']="ok"; }
+				elseif($item['progress']==-1){$item['progress']="error";}
+
+				if($item['valid']==1){ $item['valid']="valid"; }
+				elseif($item['valid']==-1){$item['valid']="invalid";}
+			$ret->data=$item;
+		}else{
+			$ret->data=array();
+		}
+		return $ret;
+	}
+}
+

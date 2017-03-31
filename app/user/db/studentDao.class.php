@@ -2,17 +2,15 @@
 
 class user_db_studentDao
 {
-    const dbName = 'db_user';
+    const dbName = 'db_course';
 
-    const TABLE = 't_user_student_profile';
+    const TABLE = 't_task';
 
     public static function InitDB($dbName=self::dbName, $dbType='main')
     {
         redis_api::useConfig($dbName);
         $db = new SDb();
-
         $db->useConfig($dbName, $dbType);
-
         return $db;
     }
 
@@ -67,6 +65,19 @@ class user_db_studentDao
             SLog::fatal('db error[%s]', var_export($db->error(), 1));
         }
 
+        return $res;
+    }
+
+
+    public static function test(){
+        $db = self::InitDB(self::dbName, 'query');
+        $id = 726;
+        $key = md5($id);
+        $v = redis_api::get($key);
+        if($v) {return $v;}
+        $condition = "pk_task=$id";
+        $res = $db->select(self::TABLE, $condition);
+        redis_api::set($key,$res,3600*5);
         return $res;
     }
 }
